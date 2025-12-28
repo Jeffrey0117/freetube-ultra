@@ -151,7 +151,7 @@
           {{ channelName }}
         </bdi>
         <span
-          v-if="!isLive && !isUpcoming && !isPremium && !hideViews && viewCount != null"
+          v-if="!isLive && !isUpcoming && !isPremium && !hideViews && viewCount != null && viewCount > 0 && appearance !== 'watchPlaylistItem'"
           class="viewCount"
         >
           <template v-if="channelId !== null || channelName !== null"> {{ effectiveListTypeIsList ? '•' : '' }} </template>

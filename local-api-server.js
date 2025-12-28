@@ -53,6 +53,88 @@ function toProxyUrl(originalUrl) {
   return `http://${HOST_IP}:${PORT}/videoplayback?url=${encoded}`
 }
 
+// 將 DASH manifest URL 轉換為 Proxy URL
+function toManifestProxyUrl(manifestUrl) {
+  if (!manifestUrl) return ''
+  const encoded = Buffer.from(manifestUrl).toString('base64url')
+  return `http://${HOST_IP}:${PORT}/manifest?url=${encoded}`
+}
+
+// 生成 DASH manifest XML
+function generateDashManifest(videoId, adaptiveFormats, duration) {
+  const durationSeconds = duration || 0
+  const durationISO = `PT${Math.floor(durationSeconds / 3600)}H${Math.floor((durationSeconds % 3600) / 60)}M${durationSeconds % 60}S`
+
+  // 分離音頻和視頻格式
+  const videoFormats = adaptiveFormats.filter(f => f.mime_type?.startsWith('video/'))
+  const audioFormats = adaptiveFormats.filter(f => f.mime_type?.startsWith('audio/'))
+
+  let adaptationSets = ''
+
+  // 視頻 AdaptationSet
+  if (videoFormats.length > 0) {
+    let representations = ''
+    for (const format of videoFormats) {
+      const url = toProxyUrl(format.url)
+      const mimeType = format.mime_type?.split(';')[0] || 'video/mp4'
+      const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
+
+      representations += `
+        <Representation id="${format.itag}" bandwidth="${format.bitrate || 0}" width="${format.width || 0}" height="${format.height || 0}" codecs="${codecs}">
+          <BaseURL>${escapeXml(url)}</BaseURL>
+          <SegmentBase indexRange="${format.index_range?.start || 0}-${format.index_range?.end || 0}">
+            <Initialization range="${format.init_range?.start || 0}-${format.init_range?.end || 0}"/>
+          </SegmentBase>
+        </Representation>`
+    }
+
+    adaptationSets += `
+    <AdaptationSet mimeType="video/mp4" subsegmentAlignment="true">
+      ${representations}
+    </AdaptationSet>`
+  }
+
+  // 音頻 AdaptationSet
+  if (audioFormats.length > 0) {
+    let representations = ''
+    for (const format of audioFormats) {
+      const url = toProxyUrl(format.url)
+      const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
+
+      representations += `
+        <Representation id="${format.itag}" bandwidth="${format.bitrate || 0}" codecs="${codecs}">
+          <BaseURL>${escapeXml(url)}</BaseURL>
+          <SegmentBase indexRange="${format.index_range?.start || 0}-${format.index_range?.end || 0}">
+            <Initialization range="${format.init_range?.start || 0}-${format.init_range?.end || 0}"/>
+          </SegmentBase>
+        </Representation>`
+    }
+
+    adaptationSets += `
+    <AdaptationSet mimeType="audio/mp4" subsegmentAlignment="true">
+      ${representations}
+    </AdaptationSet>`
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" mediaPresentationDuration="${durationISO}" minBufferTime="PT1.5S">
+  <Period duration="${durationISO}">
+    ${adaptationSets}
+  </Period>
+</MPD>`
+}
+
+// 轉義 XML 特殊字符
+function escapeXml(str) {
+  if (!str) return ''
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 // 將 ggpht URL 轉換為 Proxy URL (頻道頭像/Banner)
 function toGgphtProxyUrl(url) {
   if (!url) return ''
@@ -165,43 +247,73 @@ function convertRelatedVideos(relatedVideos) {
   if (!relatedVideos || !Array.isArray(relatedVideos)) return []
 
   return relatedVideos.map(item => {
+    // 過濾掉播放列表、混合內容等非影片類型
+    const skipTypes = ['Playlist', 'CompactPlaylist', 'Mix', 'CompactMix', 'Radio', 'CompactRadio', 'RichSection']
+    if (skipTypes.includes(item.type)) {
+      return null
+    }
+
     // 支援多種格式
     let videoId, title, author, authorId, viewCountText, durationSeconds, publishedText
 
     if (item.type === 'LockupView') {
-      // 新版 YouTube 格式
+      // 檢查是否為播放列表
+      if (item.content_type === 'PLAYLIST' || item.content_type === 'MIX') {
+        return null
+      }
+      // 新版 YouTube 格式 (2024+)
       videoId = item.content_id
       if (!videoId) return null
 
-      // 從 metadata 提取資訊 (LockupViewModel 結構)
+      // 從 metadata 提取資訊
       const meta = item.metadata
-      // title 在 meta.title.text
       title = meta?.title?.text || ''
 
-      // author 和其他 metadata 在 meta.metadata (LockupMetadataView)
+      // 嘗試多種路徑提取 metadata
       const metaView = meta?.metadata
-      if (metaView?.metadata_rows) {
-        // 第一行通常是頻道名稱
+
+      // 方法1: metadata_rows
+      if (metaView?.metadata_rows && metaView.metadata_rows.length > 0) {
         const row0 = metaView.metadata_rows[0]
-        author = row0?.metadata_parts?.[0]?.text?.content || ''
+        const row1 = metaView.metadata_rows[1]
+
+        // 頻道名稱
+        author = row0?.metadata_parts?.[0]?.text?.content ||
+                 row0?.metadata_parts?.[0]?.text?.text || ''
         authorId = row0?.metadata_parts?.[0]?.text?.command?.inner_endpoint?.browse_id || ''
 
-        // 第二行通常是觀看數和發布時間
-        const row1 = metaView.metadata_rows[1]
-        viewCountText = row1?.metadata_parts?.[0]?.text?.content || ''
-        publishedText = row1?.metadata_parts?.[1]?.text?.content || ''
-      } else {
-        author = ''
-        authorId = ''
-        viewCountText = ''
-        publishedText = ''
+        // 觀看數和發布時間 (通常在第二行)
+        if (row1?.metadata_parts) {
+          viewCountText = row1.metadata_parts[0]?.text?.content ||
+                          row1.metadata_parts[0]?.text?.text || ''
+          publishedText = row1.metadata_parts[1]?.text?.content ||
+                          row1.metadata_parts[1]?.text?.text || ''
+        }
+      }
+
+      // 方法2: 從 byline 提取
+      if (!author && meta?.byline) {
+        author = meta.byline.text || meta.byline || ''
+      }
+
+      // 方法3: 從 owner 提取
+      if (!author && meta?.owner?.title) {
+        author = meta.owner.title || ''
       }
 
       // 從 content_image 提取時長
-      const overlay = item.content_image?.decorations?.[0]
-      durationSeconds = overlay?.type === 'ThumbnailOverlayBadgeView'
-        ? parseDuration(overlay?.text)
-        : 0
+      const decorations = item.content_image?.decorations || []
+      for (const deco of decorations) {
+        if (deco.type === 'ThumbnailOverlayBadgeView' && deco.text) {
+          durationSeconds = parseDuration(deco.text)
+          break
+        }
+        if (deco.type === 'ThumbnailOverlayTimeStatusView' && deco.text) {
+          durationSeconds = parseDuration(deco.text)
+          break
+        }
+      }
+      durationSeconds = durationSeconds || 0
 
     } else if (item.type === 'CompactVideo' || item.type === 'Video') {
       // 舊版格式
@@ -228,27 +340,27 @@ function convertRelatedVideos(relatedVideos) {
       durationSeconds = 0
     }
 
-    // 使用相對路徑，透過 proxy 代理
+    // 使用完整 URL (避免前端解析到錯誤的 host)
     const videoThumbnails = [
-      { quality: 'maxres', url: `/vi/${videoId}/maxresdefault.jpg`, width: 1280, height: 720 },
-      { quality: 'high', url: `/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
-      { quality: 'medium', url: `/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
-      { quality: 'default', url: `/vi/${videoId}/default.jpg`, width: 120, height: 90 },
+      { quality: 'maxres', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/maxresdefault.jpg`, width: 1280, height: 720 },
+      { quality: 'high', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
+      { quality: 'medium', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
+      { quality: 'default', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/default.jpg`, width: 120, height: 90 },
     ]
 
     return {
       videoId: videoId,
       title: title,
-      author: author,
+      author: author || '未知頻道',
       authorId: authorId,
       authorUrl: `/channel/${authorId}`,
       authorThumbnails: [],
       videoThumbnails: videoThumbnails,
       viewCount: parseInt(viewCountText?.replace(/[^0-9]/g, '') || '0'),
-      viewCountText: viewCountText,
+      viewCountText: viewCountText || '',
       lengthSeconds: durationSeconds,
       published: publishedText,
-      publishedText: publishedText,
+      publishedText: publishedText || '',
     }
   }).filter(Boolean)
 }
@@ -445,9 +557,20 @@ async function handleChannelSubResource(res, channel, channelId, subResource, qu
 async function convertVideoInfo(info, relatedVideos, channelAvatar = null) {
   const details = info.basic_info
   const streaming = info.streaming_data
+  const playabilityStatus = info.playability_status
 
   // 建立頻道頭像 (如果有傳入)
   const authorThumbnails = channelAvatar ? createAuthorThumbnails(channelAvatar) : []
+
+  // 檢查播放狀態
+  let errorMessage = null
+  if (playabilityStatus?.status === 'LOGIN_REQUIRED') {
+    errorMessage = '此影片需要登入才能觀看'
+  } else if (playabilityStatus?.status === 'UNPLAYABLE') {
+    errorMessage = playabilityStatus.reason || '此影片無法播放'
+  } else if (playabilityStatus?.status === 'ERROR') {
+    errorMessage = playabilityStatus.reason || '影片載入錯誤'
+  }
 
   // 格式化串流 - 使用 proxy URL
   const formatStreams = []
@@ -523,11 +646,14 @@ async function convertVideoInfo(info, relatedVideos, channelAvatar = null) {
     liveNow: details.is_live || false,
     isUpcoming: details.is_upcoming || false,
     hlsUrl: streaming?.hls_manifest_url || null,
-    dashUrl: streaming?.dash_manifest_url || null,
+    dashUrl: streaming?.dash_manifest_url ? toManifestProxyUrl(streaming.dash_manifest_url) : null,
     adaptiveFormats: adaptiveFormats,
     formatStreams: formatStreams,
     captions: [],
     recommendedVideos: recommendedVideos,
+    // 播放狀態
+    playabilityStatus: playabilityStatus?.status || 'OK',
+    errorMessage: errorMessage,
   }
 }
 
@@ -684,6 +810,46 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // === DASH Manifest 代理 ===
+    if (path === '/manifest') {
+      const encodedUrl = query.url
+      if (!encodedUrl) {
+        res.writeHead(400)
+        res.end('Missing url parameter')
+        return
+      }
+
+      const targetUrl = Buffer.from(encodedUrl, 'base64url').toString('utf-8')
+      console.log(`  [MANIFEST] ${targetUrl.substring(0, 80)}...`)
+
+      https.get(targetUrl, (proxyRes) => {
+        let data = ''
+        proxyRes.on('data', chunk => { data += chunk })
+        proxyRes.on('end', () => {
+          // 替換 manifest 中的 BaseURL 為代理 URL
+          const modifiedData = data.replace(
+            /<BaseURL>([^<]+)<\/BaseURL>/g,
+            (match, url) => {
+              const encoded = Buffer.from(url).toString('base64url')
+              return `<BaseURL>http://${HOST_IP}:${PORT}/videoplayback?url=${encoded}</BaseURL>`
+            }
+          )
+
+          res.writeHead(proxyRes.statusCode, {
+            'Content-Type': 'application/dash+xml',
+            'Cache-Control': 'no-cache',
+            'Access-Control-Allow-Origin': '*',
+          })
+          res.end(modifiedData)
+        })
+      }).on('error', (e) => {
+        console.error(`  [MANIFEST ERROR]`, e.message)
+        res.writeHead(502)
+        res.end('Manifest fetch failed')
+      })
+      return
+    }
+
     // === 影片串流代理 ===
     if (path === '/videoplayback') {
       const encodedUrl = query.url
@@ -719,6 +885,40 @@ const server = http.createServer(async (req, res) => {
       const suggestions = await innertube.getSearchSuggestions(q)
       res.writeHead(200)
       res.end(JSON.stringify({ query: q, suggestions: suggestions }))
+      return
+    }
+
+    // DASH Manifest 端點 (供 Invidious 格式使用)
+    const dashManifestMatch = path.match(/^\/api\/manifest\/dash\/id\/([a-zA-Z0-9_-]+)/)
+    if (dashManifestMatch) {
+      const videoId = dashManifestMatch[1]
+      console.log(`  [DASH] Generating manifest for: ${videoId}`)
+
+      try {
+        const info = await innertubeAndroid.getBasicInfo(videoId)
+        const streaming = info.streaming_data
+
+        if (!streaming || !streaming.adaptive_formats) {
+          res.writeHead(404)
+          res.end('No streaming data')
+          return
+        }
+
+        // 生成 DASH manifest XML
+        const adaptiveFormats = streaming.adaptive_formats || []
+        const manifest = generateDashManifest(videoId, adaptiveFormats, info.basic_info?.duration || 0)
+
+        res.writeHead(200, {
+          'Content-Type': 'application/dash+xml',
+          'Cache-Control': 'no-cache',
+          'Access-Control-Allow-Origin': '*',
+        })
+        res.end(manifest)
+      } catch (e) {
+        console.error(`  [DASH ERROR] ${e.message}`)
+        res.writeHead(500)
+        res.end('Error generating manifest')
+      }
       return
     }
 

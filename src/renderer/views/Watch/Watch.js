@@ -857,6 +857,14 @@ export default defineComponent({
             throw new Error(result.error)
           }
 
+          // 檢查播放狀態錯誤
+          if (result.errorMessage) {
+            this.errorMessage = result.errorMessage
+            this.isLoading = false
+            this.updateTitle()
+            return
+          }
+
           this.videoTitle = result.title
           this.videoViewCount = result.viewCount
 
