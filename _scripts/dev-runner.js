@@ -239,6 +239,14 @@ function startWeb () {
         ]
       }
     },
+    // 代理 API 和媒體路徑到本地 API Server (支援電腦直接訪問 localhost:9080)
+    proxy: [
+      {
+        context: ['/api', '/vi', '/vi_webp', '/ggpht', '/imgproxy', '/manifest', '/videoplayback'],
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    ],
     port
   }, compiler)
 
