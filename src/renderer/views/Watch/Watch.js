@@ -887,8 +887,15 @@ export default defineComponent({
 
           this.channelId = result.authorId
           this.channelName = result.author
-          const channelThumb = result.authorThumbnails[1]
-          this.channelThumbnail = channelThumb ? youtubeImageUrlToInvidious(channelThumb.url, this.currentInvidiousInstanceUrl) : ''
+          const channelThumb = result.authorThumbnails?.[1] || result.authorThumbnails?.[0]
+          // 如果 URL 已經是 proxy URL 就直接用，否則才轉換
+          if (channelThumb?.url) {
+            this.channelThumbnail = channelThumb.url.includes('/ggpht') || channelThumb.url.includes('/imgproxy')
+              ? channelThumb.url
+              : youtubeImageUrlToInvidious(channelThumb.url, this.currentInvidiousInstanceUrl)
+          } else {
+            this.channelThumbnail = ''
+          }
           this.updateSubscriptionDetails({
             channelThumbnailUrl: channelThumb?.url,
             channelName: result.author,

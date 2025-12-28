@@ -265,8 +265,8 @@ registerSwiper()
 // 忽略 ResizeObserver loop 錯誤 (常見於 webpack-dev-server)
 const resizeObserverErr = window.onerror
 window.onerror = function (message, source, lineno, colno, error) {
-  if (message && message.includes && message.includes('ResizeObserver loop')) {
-    return true // 忽略這個錯誤
+  if (message && typeof message === 'string' && message.includes('ResizeObserver')) {
+    return true
   }
   if (resizeObserverErr) {
     return resizeObserverErr(message, source, lineno, colno, error)
@@ -274,11 +274,20 @@ window.onerror = function (message, source, lineno, colno, error) {
   return false
 }
 
-// 同樣處理 unhandledrejection
+// 攔截所有 error 事件
 window.addEventListener('error', (event) => {
-  if (event.message && event.message.includes('ResizeObserver loop')) {
-    event.stopPropagation()
+  if (event.message && event.message.includes('ResizeObserver')) {
+    event.stopImmediatePropagation()
     event.preventDefault()
+    return true
+  }
+}, true)
+
+// 攔截 unhandledrejection
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason && event.reason.message && event.reason.message.includes('ResizeObserver')) {
+    event.preventDefault()
+    return true
   }
 })
 
