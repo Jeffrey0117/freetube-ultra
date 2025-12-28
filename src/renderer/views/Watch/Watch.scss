@@ -259,7 +259,7 @@ $yt-tablet-breakpoint: 1350px;
   @media only screen and (width <= $yt-mobile-breakpoint) {
     @include single-column-template;
     padding-inline: 0;
-    padding-block-start: 0;
+    padding-block-start: 60px; // Space for fixed navbar
     gap: 0;
     max-inline-size: 100%;
     overflow-x: hidden;
@@ -269,12 +269,16 @@ $yt-tablet-breakpoint: 1350px;
       overflow: hidden;
 
       .videoAreaMargin {
-        margin-block-end: 12px;
+        margin-block-end: 8px;
       }
 
       .videoPlayer {
-        border-radius: 0;
-        max-inline-size: 100%;
+        border-radius: 0 !important;
+        max-inline-size: 100% !important;
+        // Taller video on mobile
+        aspect-ratio: unset !important;
+        height: 50vh !important;
+        min-height: 220px !important;
       }
     }
 

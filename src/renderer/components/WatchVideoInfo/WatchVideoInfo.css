@@ -279,25 +279,100 @@
     max-width: 100%;
   }
 
+  /* Action buttons - wrap to multiple rows */
   .actionButtonsRow {
     display: flex;
     align-items: center;
     gap: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
     padding-block: 8px;
-    /* Remove negative margins - use padding only */
     padding-inline: 0;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     max-width: 100%;
   }
 
-  .actionButtonsRow::-webkit-scrollbar {
-    display: none;
+  /* Override button colors - theme aware */
+  .actionButtonsRow :deep(.iconButton.secondary),
+  .actionButtonsRow :deep(.iconButton.base),
+  .actionButtonsRow :deep(.iconButton) {
+    background-color: var(--side-nav-hover-color) !important;
+    color: var(--primary-text-color) !important;
   }
 
+  .actionButtonsRow :deep(.iconButton.secondary:hover),
+  .actionButtonsRow :deep(.iconButton.base:hover),
+  .actionButtonsRow :deep(.iconButton:hover) {
+    background-color: var(--side-nav-active-color) !important;
+  }
+}
+
+/* Icon button styles at 825px */
+@media screen and (width <= 825px) {
+  /* All action buttons same size */
+  .actionButtonsRow .actionButton {
+    width: 44px !important;
+    height: 44px !important;
+    flex: 0 0 44px !important;
+    padding: 0 !important;
+  }
+
+  .actionButtonsRow .actionButton :deep(.ftIconButton) {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .actionButtonsRow .actionButton :deep(.iconButton) {
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background-color: var(--side-nav-hover-color) !important;
+    color: var(--primary-text-color) !important;
+    font-size: 18px !important;
+  }
+
+  .actionButtonsRow .actionButton :deep(.iconButton:hover) {
+    background-color: var(--side-nav-active-color) !important;
+  }
+}
+
+/* Force icon buttons to new line at 600px */
+@media screen and (width <= 600px) {
+  .actionButtonsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  /* Subscribe normal */
+  .actionButtonsRow .subscribeButtonCompact {
+    flex: 0 0 auto;
+    order: 1;
+  }
+
+  /* Like/dislike pushed to right */
+  .actionButtonsRow .likeDislikePill {
+    flex: 0 0 auto;
+    order: 2;
+    margin-inline-start: auto;
+  }
+
+  /* Line break element */
+  .actionButtonsRow::before {
+    content: "";
+    width: 100%;
+    order: 3;
+  }
+
+  /* Action buttons after line break */
+  .actionButtonsRow .actionButton {
+    flex: 0 0 44px;
+    order: 4;
+  }
+}
+
+/* Continue 900px styles */
+@media screen and (width <= 900px) {
   /* Title - Compact, expandable style */
   .videoTitleSection {
     gap: 4px;
