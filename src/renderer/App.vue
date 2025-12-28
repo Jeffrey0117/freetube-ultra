@@ -178,11 +178,20 @@ onMounted(async () => {
   updateTheme()
 
   await store.dispatch('fetchInvidiousInstancesFromFile')
-  if (defaultInvidiousInstance.value === '') {
+
+  // 如果是遠程訪問，強制使用同域名 API
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    const apiUrl = `${window.location.protocol}//${window.location.hostname}`
+    store.commit('setCurrentInvidiousInstance', apiUrl)
+  } else if (defaultInvidiousInstance.value === '') {
     await store.dispatch('setRandomCurrentInvidiousInstance')
   }
 
   store.dispatch('fetchInvidiousInstances').then(() => {
+    // 遠程訪問時不要覆蓋我們的 API 設定
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      return
+    }
     if (defaultInvidiousInstance.value === '') {
       store.dispatch('setRandomCurrentInvidiousInstance')
     }

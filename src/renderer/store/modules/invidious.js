@@ -1,9 +1,19 @@
 import { base64EncodeUtf8, createWebURL, fetchWithTimeout, randomArrayItem } from '../../helpers/utils'
 
+// 運行時檢測 API URL (支援 Cloudflare Tunnel 遠程訪問)
+function getInitialApiUrl() {
+  if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost') {
+    return `${window.location.protocol}//${window.location.hostname}`
+  }
+  return 'http://localhost:3001'
+}
+
+const initialApiUrl = getInitialApiUrl()
+
 const state = {
-  currentInvidiousInstance: '',
+  currentInvidiousInstance: initialApiUrl,
   currentInvidiousInstanceAuthorization: null,
-  currentInvidiousInstanceUrl: '',
+  currentInvidiousInstanceUrl: initialApiUrl,
   invidiousInstancesList: null
 }
 

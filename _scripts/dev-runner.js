@@ -223,6 +223,12 @@ function startWeb () {
 
   const server = new WebpackDevServer({
     open: true,
+    allowedHosts: 'all',
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    },
     static: {
       directory: path.resolve(__dirname, '..', 'static'),
       watch: {

@@ -4,6 +4,14 @@ import { MAIN_PROFILE_ID, SyncEvents } from '../../../constants'
 import { DBSettingHandlers } from '../../../datastores/handlers/index'
 import { getSystemLocale, showToast } from '../../helpers/utils'
 
+// 運行時動態檢測 API URL
+function getDefaultApiUrl() {
+  if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost') {
+    return `${window.location.protocol}//${window.location.hostname}`
+  }
+  return 'http://localhost:3001'
+}
+
 /*
  * Due to the complexity of the settings module in FreeTube, a more
  * in-depth explanation for adding new settings is required.
@@ -309,7 +317,7 @@ const state = {
 
   // The settings below have side effects
   currentLocale: 'system',
-  defaultInvidiousInstance: 'http://localhost:3001',
+  defaultInvidiousInstance: getDefaultApiUrl(),
   defaultVolume: 1,
   uiScale: 100,
   userPlaylistsSortBy: 'latest_played_first',

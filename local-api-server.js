@@ -152,21 +152,22 @@ function escapeXml(str) {
 }
 
 // 將 ggpht URL 轉換為 Proxy URL (頻道頭像/Banner)
+// 使用相對路徑，讓瀏覽器自動使用當前 host (支援 Cloudflare Tunnel)
 function toGgphtProxyUrl(url) {
   if (!url) return ''
   // 處理 protocol-relative URL
   if (url.startsWith('//')) {
     url = 'https:' + url
   }
-  // 轉換 ggpht URL - 返回完整 URL
+  // 轉換 ggpht URL - 返回相對路徑
   if (url.includes('yt3.ggpht.com')) {
     const ggphtPath = url.replace(/^https?:\/\/yt3\.ggpht\.com/, '')
-    return `http://${HOST_IP}:${PORT}/ggpht${ggphtPath}`
+    return `/ggpht${ggphtPath}`
   }
-  // 轉換 googleusercontent URL (有些頭像用這個) - 返回完整 URL
+  // 轉換 googleusercontent URL (有些頭像用這個) - 返回相對路徑
   if (url.includes('googleusercontent.com')) {
     const encoded = Buffer.from(url).toString('base64url')
-    return `http://${HOST_IP}:${PORT}/imgproxy?url=${encoded}`
+    return `/imgproxy?url=${encoded}`
   }
   return url
 }
@@ -985,10 +986,14 @@ const server = http.createServer(async (req, res) => {
       // 用一般 client 取得相關影片和頻道頭像 (Android client 沒有 watch_next_feed)
       let relatedVideos = []
       let channelAvatar = null
+      let channelId = null
       try {
         const fullInfo = await innertube.getInfo(videoId)
         relatedVideos = fullInfo.watch_next_feed || []
         console.log(`  Found ${relatedVideos.length} related videos`)
+
+        // 取得頻道 ID
+        channelId = fullInfo.basic_info?.channel_id || fullInfo.secondary_info?.owner?.author?.id
 
         // 嘗試從 secondary_info 取得頻道頭像
         const secondaryInfo = fullInfo.secondary_info
@@ -1000,7 +1005,52 @@ const server = http.createServer(async (req, res) => {
         console.log(`  Could not get related videos: ${e.message}`)
       }
 
-      const converted = await convertVideoInfo(info, relatedVideos, channelAvatar)
+      // === 混合推薦策略 ===
+      // 1. 取得同頻道影片 (5部)
+      let channelVideos = []
+      if (channelId) {
+        try {
+          const channel = await innertube.getChannel(channelId)
+          // 嘗試取得影片，即使 has_videos 為 false (YouTube.js 有時偵測不到)
+          const videosTab = await channel.getVideos()
+          const allChannelVideos = videosTab.videos || []
+          // 取前 5 部，排除目前影片
+          channelVideos = allChannelVideos
+            .filter(v => v.id !== videoId)
+            .slice(0, 5)
+          if (channelVideos.length > 0) {
+            console.log(`  Added ${channelVideos.length} channel videos to recommendations`)
+          }
+        } catch (e) {
+          // 忽略錯誤，繼續使用 YouTube 原本推薦
+        }
+      }
+
+      // 2. 合併推薦：同頻道影片優先 + YouTube 推薦
+      // 去重複 (by videoId)
+      const seenIds = new Set()
+      const mergedRelated = []
+
+      // 先加同頻道影片
+      for (const video of channelVideos) {
+        if (!seenIds.has(video.id)) {
+          seenIds.add(video.id)
+          mergedRelated.push(video)
+        }
+      }
+
+      // 再加 YouTube 原本推薦
+      for (const video of relatedVideos) {
+        const vid = video.id || video.video_id || video.content_id
+        if (vid && !seenIds.has(vid)) {
+          seenIds.add(vid)
+          mergedRelated.push(video)
+        }
+      }
+
+      console.log(`  Mixed recommendations: ${channelVideos.length} channel + ${relatedVideos.length} related = ${mergedRelated.length} total`)
+
+      const converted = await convertVideoInfo(info, mergedRelated, channelAvatar)
       res.writeHead(200)
       res.end(JSON.stringify(converted))
       return
