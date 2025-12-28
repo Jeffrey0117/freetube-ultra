@@ -248,7 +248,11 @@ export function repairInvidiousManifest(periods) {
           ?.children[0]
 
         if (baseUrl) {
-          const url = new URL(baseUrl.replaceAll('&amp;', '&'))
+          // 支援相對路徑 URL (來自本地 API server)
+          const urlString = baseUrl.replaceAll('&amp;', '&')
+          const url = urlString.startsWith('/')
+            ? new URL(urlString, window.location.origin)
+            : new URL(urlString)
 
           if (url.searchParams.has('xtags')) {
             const xtags = url.searchParams.get('xtags').split(':')
