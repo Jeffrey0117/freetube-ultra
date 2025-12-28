@@ -61,20 +61,7 @@
 
     <!-- Action Buttons Row - YouTube Style Horizontal Scroll -->
     <div class="actionButtonsRow">
-      <!-- Channel Avatar (duplicate for action row on mobile) -->
-      <RouterLink
-        v-if="!hideUploader"
-        :to="`/channel/${channelId}`"
-        class="actionRowAvatar"
-      >
-        <img
-          :src="channelThumbnail"
-          class="actionRowAvatarImg"
-          alt=""
-        >
-      </RouterLink>
-
-      <!-- Bell/Subscribe Button -->
+      <!-- Bell/Subscribe Button (compact, no avatar) -->
       <FtSubscribeButton
         v-if="!hideUnsubscribeButton && !hideUploader"
         :channel-id="channelId"

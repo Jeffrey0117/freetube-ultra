@@ -374,20 +374,15 @@
     margin-inline-start: 4px;
   }
 
-  /* Action row avatar */
-  .actionRowAvatar {
-    flex-shrink: 0;
-  }
-
-  .actionRowAvatarImg {
-    inline-size: 32px;
-    block-size: 32px;
-    border-radius: 50%;
-  }
-
-  /* Subscribe button compact */
+  /* Subscribe button compact - smaller style for mobile */
   .subscribeButtonCompact {
     flex-shrink: 0;
+  }
+
+  .subscribeButtonCompact :deep(.ft-button) {
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    min-width: auto !important;
   }
 
   /* YouTube-style pill buttons */
@@ -447,11 +442,6 @@
 
   .showMoreBtn {
     font-size: 12px;
-  }
-
-  .actionRowAvatarImg {
-    inline-size: 28px;
-    block-size: 28px;
   }
 
   /* Compact action buttons */
