@@ -1,0 +1,308 @@
+// YouTube-style layout variables
+$yt-player-width: 70%;
+$yt-sidebar-width: 30%;
+$yt-max-player-width: 1280px;
+$yt-content-gap: 24px;
+$yt-mobile-breakpoint: 1050px;
+$yt-tablet-breakpoint: 1350px;
+
+@mixin yt-dual-column-template {
+  grid-template:
+    'video sidebar' auto
+    'info sidebar' auto / minmax(0, $yt-player-width) minmax(300px, $yt-sidebar-width);
+  gap: 0 $yt-content-gap;
+}
+
+@mixin theatre-mode-template {
+  grid-template: 'video video video' auto 'info info sidebar' auto 'info info sidebar' auto / 1fr 1fr 1fr;
+}
+
+@mixin single-column-template {
+  grid-template: 'video' auto 'info' auto 'sidebar' auto / auto;
+}
+
+.ageRestricted {
+  @include single-column-template;
+
+  display: inline-block;
+  max-inline-size: calc(80vh * 1.78);
+
+  @media only screen and (width >= 1051px) {
+    inline-size: 300%;
+  }
+}
+
+.premiereDate {
+  align-items: center;
+  background-color: rgb(0 0 0 / 80%);
+  border-radius: 5px;
+  inset-block-end: 12px;
+  color: #fff;
+  display: flex;
+  block-size: 60px;
+  inset-inline-start: 12px;
+  padding-block: 0;
+  padding-inline: 12px;
+  position: absolute;
+
+  .premiereIcon {
+    float: inline-start;
+    font-size: 25px;
+    margin-block: 0;
+    margin-inline: 12px;
+  }
+
+  .premiereText {
+    margin-block: 0;
+    margin-inline: 12px;
+    min-inline-size: 200px;
+
+    .premiereTextTimestamp {
+      font-size: 0.85em;
+      font-weight: bold;
+    }
+  }
+}
+
+.premiereDate.trailer {
+  margin-block-start: 8px;
+  position: static;
+}
+
+.videoLayout {
+  @include yt-dual-column-template;
+
+  align-items: start;
+  display: grid;
+  max-inline-size: 1800px;
+  margin-inline: auto;
+  padding-inline: 24px;
+  padding-block-start: 24px;
+
+  &.isLoading,
+  &.noSidebar {
+    @include single-column-template;
+
+    .videoArea {
+      max-inline-size: $yt-max-player-width;
+      margin-inline: auto;
+    }
+  }
+
+  .videoArea {
+    grid-area: video;
+    position: relative;
+
+    .videoAreaMargin {
+      margin-block: 0 16px;
+      margin-inline: 0;
+    }
+
+    .videoPlayer {
+      grid-column: 1;
+      margin-block: 0;
+      margin-inline: auto;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      background-color: #000;
+
+      // 16:9 aspect ratio container
+      aspect-ratio: 16 / 9;
+      width: 100%;
+
+      .videoThumbnail {
+        inline-size: 100%;
+        block-size: 100%;
+        object-fit: cover;
+      }
+
+      .errorContainer {
+        position: absolute;
+        inset: 30px;
+        display: grid;
+        place-content: center;
+      }
+
+      .errorWrapper {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 20px;
+        padding: 10px;
+        border-radius: 20px;
+        background-color: rgb(0 0 0 / 90%);
+        color: #fff;
+      }
+
+      .errorIcon {
+        font-size: 80px;
+      }
+
+      .errorMessage {
+        margin: 0;
+      }
+
+      @media only screen and (width <= 680px) {
+        .errorContainer {
+          inset: 10px;
+        }
+
+        .errorWrapper {
+          gap: 10px;
+        }
+
+        .errorIcon {
+          font-size: 60px;
+        }
+      }
+    }
+  }
+
+  .watchVideo {
+    grid-column: 1;
+    margin-block: 0 16px;
+    margin-inline: 0;
+  }
+
+  .infoArea {
+    grid-area: info;
+    position: relative;
+    z-index: 2;
+  }
+
+  .sidebarArea {
+    grid-area: sidebar;
+    position: sticky;
+    inset-block-start: 76px;
+    max-block-size: calc(100vh - 100px);
+    overflow-y: auto;
+
+    // Custom scrollbar for sidebar
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-color, rgba(255, 255, 255, 0.2));
+      border-radius: 4px;
+    }
+
+    @media only screen and (width >= 1051px) {
+      min-inline-size: 300px;
+      max-inline-size: 420px;
+    }
+
+    @at-root .noSidebar#{&} {
+      grid-area: auto;
+      position: static;
+      max-block-size: none;
+    }
+  }
+
+  .watchVideoPlaylist,
+  .watchVideoSidebar,
+  .theatrePlaylist {
+    margin-block: 0 16px;
+    margin-inline: 0;
+  }
+
+  .watchVideoSidebar,
+  .watchVideoPlaylist {
+    block-size: 500px;
+  }
+
+  .watchVideoPlaylist {
+    :deep(.videoThumbnail) {
+      margin-block: auto;
+    }
+
+    @media (width <= 768px) {
+      block-size: auto;
+    }
+  }
+
+  .watchVideoRecommendations,
+  .theatreRecommendations {
+    margin-block: 0 16px;
+    margin-inline: 0;
+  }
+
+  // Tablet layout - theater mode style
+  @media only screen and (width <= $yt-tablet-breakpoint) {
+    @include theatre-mode-template;
+    padding-inline: 16px;
+  }
+
+  // Theatre mode toggle
+  @media only screen and (width >= 1051px) {
+    &.useTheatreMode {
+      @include theatre-mode-template;
+      max-inline-size: none;
+      padding-inline: 0;
+
+      .videoArea {
+        max-inline-size: none;
+
+        .videoPlayer {
+          border-radius: 0;
+        }
+      }
+    }
+  }
+
+  // Mobile layout - single column
+  @media only screen and (width <= $yt-mobile-breakpoint) {
+    @include single-column-template;
+    padding-inline: 0;
+    padding-block-start: 0;
+    gap: 0;
+    max-inline-size: 100%;
+    overflow-x: hidden;
+
+    .videoArea {
+      max-inline-size: 100%;
+      overflow: hidden;
+
+      .videoAreaMargin {
+        margin-block-end: 12px;
+      }
+
+      .videoPlayer {
+        border-radius: 0;
+        max-inline-size: 100%;
+      }
+    }
+
+    .infoArea {
+      padding-inline: 12px;
+      max-inline-size: 100%;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+
+    .sidebarArea {
+      position: static;
+      max-block-size: none;
+      padding-inline: 12px;
+      max-inline-size: 100%;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+  }
+
+  @media only screen and (width >= 1051px) {
+    .infoArea {
+      scroll-margin-block-start: 76px;
+    }
+
+    .infoAreaSticky {
+      position: sticky;
+      inset-block-start: 76px;
+    }
+  }
+}

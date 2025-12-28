@@ -1,0 +1,548 @@
+/* stylelint-disable no-descending-specificity */
+$thumbnail-overlay-opacity: 0.85;
+$watched-transition-duration: 0.5s;
+
+// YouTube-style variables
+$yt-thumbnail-radius: 12px;
+$yt-duration-bg: rgba(0, 0, 0, 0.8);
+$yt-duration-radius: 4px;
+$yt-hover-scale: 1.02;
+$yt-transition-speed: 0.2s;
+$yt-channel-avatar-size: 36px;
+$yt-grid-gap: 16px;
+
+@mixin is-result {
+  @at-root {
+    .result#{&} {
+      @content;
+    }
+  }
+}
+
+@mixin is-watch-playlist-item {
+  @at-root {
+    .watchPlaylistItem#{&} {
+      @content;
+    }
+  }
+}
+
+@mixin is-recommendation {
+  @at-root {
+    .recommendation#{&} {
+      @content;
+    }
+  }
+}
+
+@mixin is-sidebar-item {
+  @at-root {
+    .watchPlaylistItem#{&},
+    .recommendation#{&} {
+      @content;
+    }
+  }
+}
+
+@mixin low-contrast-when-watched($col) {
+  color: $col;
+
+  @at-root {
+    .watched &,
+    .watched#{&} {
+      color: var(--tertiary-text-color);
+      transition-duration: $watched-transition-duration;
+    }
+    .watched:hover &,
+    .watched:hover#{&} {
+      color: $col;
+      transition-duration: $watched-transition-duration;
+    }
+  }
+}
+
+.ft-list-item {
+  padding: 6px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &.watched {
+    background-color: var(--bg-color);
+
+    @include low-contrast-when-watched(var(--primary-text-color));
+
+    .thumbnailImage {
+      opacity: 0.3;
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
+      transition: opacity $watched-transition-duration;
+    }
+
+    &:hover .thumbnailImage,
+    &:focus .thumbnailImage {
+      opacity: 1;
+      transition-duration: $watched-transition-duration;
+    }
+  }
+
+  .videoThumbnail {
+    display: grid;
+    position: relative;
+    border-radius: $yt-thumbnail-radius;
+    overflow: hidden;
+    transition: transform $yt-transition-speed ease;
+
+    .thumbnailLink,
+    .videoWatched,
+    .videoDuration,
+    .externalPlayerIcon,
+    .playlistIcons,
+    .watchedProgressBar,
+    .videoCountContainer,
+    .background,
+    .inner {
+      grid-column: 1;
+      grid-row: 1;
+      user-select: none;
+    }
+
+    .thumbnailLink {
+      display: flex;
+      overflow: hidden;
+      border-radius: $yt-thumbnail-radius;
+    }
+
+    .thumbnailImage {
+      transition: transform $yt-transition-speed ease;
+
+      @include is-sidebar-item {
+        block-size: 75px;
+      }
+
+      @include is-recommendation {
+        block-size: auto;
+        inline-size: 163px;
+      }
+    }
+
+    .videoWatched {
+      place-self: flex-start start;
+      background-color: var(--bg-color);
+      color: var(--primary-text-color);
+      opacity: $thumbnail-overlay-opacity;
+      padding: 2px;
+      pointer-events: none;
+      border-radius: $yt-thumbnail-radius 0 $yt-duration-radius 0;
+    }
+
+    // YouTube-style duration badge: black background, white text
+    .videoDuration {
+      place-self: flex-end end;
+      background-color: $yt-duration-bg;
+      border-radius: $yt-duration-radius;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.2;
+      margin-block: 0 4px;
+      margin-inline: 0 4px;
+      padding-block: 3px;
+      padding-inline: 4px;
+      pointer-events: none;
+      letter-spacing: 0.5px;
+
+      @include is-watch-playlist-item {
+        font-size: 11px;
+      }
+
+      &.live {
+        background-color: #c00;
+        color: #fff;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      &.upcoming {
+        background-color: var(--primary-color);
+        color: #fff;
+      }
+    }
+
+    .externalPlayerIcon {
+      place-self: flex-end start;
+      font-size: 17px;
+      margin-block-end: 4px;
+      margin-inline-start: 4px;
+    }
+
+    .playlistIcons {
+      justify-self: end;
+      margin-inline-end: 3px;
+      margin-block-start: 3px;
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: flex-end;
+      block-size: fit-content;
+    }
+
+    .quickBookmarkVideoIcon,
+    .addToPlaylistIcon,
+    .trashIcon,
+    .upArrowIcon,
+    .downArrowIcon {
+      font-size: 17px;
+    }
+
+    .watchedProgressBar {
+      place-self: flex-end stretch;
+      background-color: var(--primary-color);
+      block-size: 2px;
+      z-index: 2;
+    }
+
+    .videoCountContainer {
+      place-self: stretch end;
+      display: grid;
+      font-size: 20px;
+      inline-size: 60px;
+      pointer-events: none;
+
+      .background {
+        background-color: var(--bg-color);
+        opacity: 0.9;
+      }
+
+      .inner {
+        align-items: center;
+        color: var(--primary-text-color);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 1;
+      }
+    }
+  }
+
+  .channelThumbnail {
+    display: flex;
+    justify-content: center;
+
+    .channelThumbnailLink {
+      inline-size: 100%;
+      text-align: center;
+
+      .channelImage {
+        border-radius: 50%;
+        block-size: 130px;
+      }
+
+      .gameImage {
+        block-size: 130px;
+      }
+    }
+  }
+
+  .info {
+    align-content: flex-start;
+    display: grid;
+    flex: 1;
+    min-inline-size: 0; // Allow shrinking on mobile
+    max-width: 100%;
+    overflow: hidden;
+    grid-template:
+      'avatar title optionsExternalButton' auto
+      'avatar infoLine optionsExternalButton' auto
+      'avatar description optionsExternalButton' auto / auto minmax(0, 1fr) auto;
+
+    .channelAvatar {
+      grid-area: avatar;
+      margin-inline-end: 12px;
+      margin-block-start: 2px;
+
+      .channelAvatarLink {
+        display: block;
+        inline-size: $yt-channel-avatar-size;
+        block-size: $yt-channel-avatar-size;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+
+        .channelAvatarImage {
+          inline-size: 100%;
+          block-size: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+        }
+      }
+    }
+
+    .buttonStack {
+      grid-area: optionsExternalButton;
+    }
+
+    .optionsButton {
+      grid-area: optionsExternalButton;
+    }
+
+    .externalPlayerButton {
+      grid-area: optionsExternalButton;
+    }
+
+    // YouTube-style title: bold, max 2 lines with ellipsis
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+      grid-area: title;
+      text-decoration: none;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-block-size: 2.8em;
+
+      @include low-contrast-when-watched(var(--primary-text-color));
+
+      @include is-sidebar-item {
+        font-size: 14px;
+        -webkit-line-clamp: 2;
+        max-block-size: 2.8em;
+      }
+    }
+
+    // YouTube-style info line
+    .infoLine {
+      font-size: 13px;
+      grid-area: infoLine;
+      margin-block-start: 4px;
+      overflow-wrap: anywhere;
+      text-align: start;
+      color: var(--secondary-text-color);
+      line-height: 1.4;
+
+      @include low-contrast-when-watched(var(--secondary-text-color));
+
+      @include is-sidebar-item {
+        font-size: 12px;
+      }
+
+      .channelName {
+        @include low-contrast-when-watched(var(--secondary-text-color));
+
+        &:hover {
+          color: var(--primary-text-color);
+        }
+      }
+
+      .viewCount,
+      .uploadedTime {
+        color: var(--secondary-text-color);
+      }
+    }
+
+    .description {
+      font-size: 14px;
+      grid-area: description;
+      max-block-size: 50px;
+      overflow-y: hidden;
+
+      @include low-contrast-when-watched(var(--secondary-text-color));
+    }
+  }
+
+  &.list {
+    align-items: flex-start;
+    display: flex;
+
+    @include is-sidebar-item {
+      .videoThumbnail {
+        margin-inline-end: 10px;
+      }
+    }
+
+    &.result {
+      .videoThumbnail,
+      .channelThumbnailLink,
+      .thumbnailLink,
+      .thumbnailImage {
+        inline-size: 336px;
+        max-inline-size: 25vw;
+
+        @media only screen and (width <= 680px) {
+          max-inline-size: 30vw;
+        }
+      }
+
+      .channelImage {
+        max-inline-size: 25vw;
+        max-block-size: 25vw;
+
+        @media only screen and (width <= 680px) {
+          max-inline-size: 30vw;
+          max-block-size: 30vw;
+        }
+      }
+    }
+
+
+    .videoThumbnail,
+    .channelThumbnail {
+      margin-inline-end: 20px;
+    }
+
+    .info .description {
+      margin-inline-end: 10px;
+    }
+  }
+
+  &.grid {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 230px;
+    padding-block-end: 16px;
+    box-sizing: border-box;
+    block-size: 100%;
+    cursor: pointer;
+
+    // YouTube-style hover effect: scale thumbnail
+    &:hover .videoThumbnail {
+      .thumbnailImage {
+        transform: scale($yt-hover-scale);
+      }
+    }
+
+    .videoThumbnail,
+    .channelThumbnail {
+      margin-block-end: 12px;
+
+      .thumbnailImage {
+        // Ensure placeholder image displayed at same aspect ratio as most other images
+        aspect-ratio: 16/9;
+        // DeArrrow thumbnails are vertical for shorts.
+        // Set the object-fit so they don't get stretched to 16:9
+        object-fit: contain;
+        // Ensure smooth hover transition
+        transition: transform $yt-transition-speed ease;
+      }
+    }
+
+    .thumbnailImage,
+    .channelThumbnail {
+      inline-size: 100%;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .infoLine {
+      font-size: 13px;
+      margin-block-start: 4px;
+    }
+
+    // In grid view, put channel name on its own line
+    .infoLine .channelName {
+      display: block;
+      margin-block-end: 2px;
+    }
+  }
+
+  .playlistIcons,
+  .externalPlayerIcon {
+    opacity: $thumbnail-overlay-opacity;
+  }
+
+  @media (hover: hover) {
+    &:hover .quickBookmarkVideoIcon:not(.alwaysVisible),
+    .quickBookmarkVideoIcon.bookmarked:not(.alwaysVisible),
+    &:hover .addToPlaylistIcon:not(.alwaysVisible),
+    &:hover .externalPlayerIcon,
+    &:has(:focus-visible) .addToPlaylistIcon:not(.alwaysVisible),
+    &:has(:focus-visible) .quickBookmarkVideoIcon:not(.alwaysVisible),
+    &:has(:focus-visible) .externalPlayerIcon {
+      opacity: 1;
+    }
+
+    &:hover .optionsButton,
+    &:has(:focus-visible) .optionsButton,
+    // Keep visible when the drop down is open
+    :deep(.optionsButton:has(> .iconDropdown:focus-within)) {
+      opacity: 1;
+    }
+
+    .quickBookmarkVideoIcon:not(.alwaysVisible),
+    .addToPlaylistIcon:not(.alwaysVisible),
+    .externalPlayerIcon,
+    .optionsButton {
+      opacity: 0;
+      transition: visibility 0s, opacity 0.2s linear;
+    }
+  }
+}
+
+.videoWatched,
+.live,
+.upcoming {
+  user-select: none;
+}
+
+.live {
+  text-transform: uppercase;
+}
+
+// we use h3 for semantic reasons but don't want to keep the h3 style
+.h3Title {
+  margin-block-start: inherit;
+  margin-block-end: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+// Mobile responsive styles
+@media only screen and (width <= 480px) {
+  .ft-list-item {
+    padding: 4px;
+
+    &.list {
+      .videoThumbnail,
+      .channelThumbnail {
+        margin-inline-end: 10px;
+      }
+
+      &.result {
+        .videoThumbnail,
+        .channelThumbnailLink,
+        .thumbnailLink,
+        .thumbnailImage {
+          inline-size: 120px;
+          max-inline-size: 35vw;
+        }
+      }
+    }
+
+    &.grid {
+      min-block-size: 180px;
+      padding-block-end: 12px;
+
+      .info .title {
+        font-size: 14px;
+      }
+
+      .info .infoLine {
+        font-size: 12px;
+      }
+    }
+
+    .info {
+      .title {
+        font-size: 14px;
+      }
+
+      .infoLine {
+        font-size: 11px;
+      }
+    }
+  }
+}

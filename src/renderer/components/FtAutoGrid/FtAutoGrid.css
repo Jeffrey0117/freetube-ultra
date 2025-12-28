@@ -1,0 +1,61 @@
+/* YouTube-style responsive grid layout */
+.grid {
+  display: grid;
+  gap: 16px;
+  justify-content: space-evenly;
+  padding: 8px 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+
+  /* Mobile: 1 column */
+  grid-template-columns: 1fr;
+}
+
+/* Small tablet: 2 columns (600px - 767px) */
+@media only screen and (min-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* Tablet: 2-3 columns (768px - 1024px) */
+@media only screen and (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media only screen and (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Desktop: 4-5 columns (> 1024px) */
+@media only screen and (min-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* Large desktop: ensure good column sizing */
+@media only screen and (min-width: 1600px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+/* Extra large screens: max out at reasonable sizes */
+@media only screen and (min-width: 2000px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}

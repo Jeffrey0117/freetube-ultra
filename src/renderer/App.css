@@ -1,0 +1,160 @@
+@font-face {
+  font-family: Roboto;
+  src: url('assets/font/Roboto-Regular.ttf');
+}
+
+/* Import Google Fonts for CJK support */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+.app {
+  display: flex;
+  flex-wrap: wrap;
+  font-family: Roboto, 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  block-size: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent horizontal overflow */
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Global overflow fix for mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Global transition for interactive elements */
+a,
+button,
+input,
+select,
+textarea,
+.ft-button,
+.ft-card,
+.ft-list-item,
+.navOption {
+  transition: background-color var(--transition-duration) var(--transition-timing),
+              color var(--transition-duration) var(--transition-timing),
+              border-color var(--transition-duration) var(--transition-timing),
+              box-shadow var(--transition-duration) var(--transition-timing),
+              opacity var(--transition-duration) var(--transition-timing),
+              transform var(--transition-duration) var(--transition-timing);
+}
+
+/* Hover scale effect for cards */
+.ft-list-item.grid:hover {
+  transform: translateY(-2px);
+}
+
+/* Smooth image loading */
+img {
+  transition: opacity var(--transition-duration) var(--transition-timing);
+}
+
+img[loading="lazy"] {
+  opacity: 0;
+}
+
+img[loading="lazy"].loaded,
+img:not([loading="lazy"]) {
+  opacity: 1;
+}
+
+.routerView {
+  flex: 1 1 0%;
+  margin-block: 18px;
+  margin-inline: 10px;
+}
+
+.banner {
+  inline-size: 85%;
+  margin-block: 40px 0;
+  margin-inline: auto;
+}
+
+.banner + .banner {
+  margin-block: 20px;
+}
+
+.banner-wrapper {
+  margin-block: 0;
+  margin-inline: 10px;
+}
+
+.flexBox {
+  display: block;
+  user-select: unset;
+}
+
+.changeLogTitle {
+  padding-inline: 16px;
+  overflow-wrap: break-word;
+  margin-block-end: 16px;
+}
+
+.changeLogText {
+  overflow-y: scroll;
+  block-size: 40vh;
+  display: block;
+  padding-inline: 16px;
+  margin-block-end: 16px;
+  overflow-wrap: break-word;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Mobile styles (< 768px) */
+@media only screen and (max-width: 767px) {
+  .routerView {
+    margin-block: 68px;
+    margin-inline: 0; /* Remove side margins on mobile */
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .banner {
+    inline-size: 95%;
+    margin-block: 60px 0;
+  }
+
+  .flexBox {
+    margin-block: 60px -75px;
+  }
+
+  .changeLogText {
+    block-size: 65vh;
+  }
+}
+
+/* Tablet styles (768px - 1024px) */
+@media only screen and (min-width: 768px) and (max-width: 1024px) {
+  .routerView {
+    margin-block: 20px;
+    margin-inline: var(--yt-spacing-md, 16px);
+  }
+
+  .banner {
+    inline-size: 90%;
+  }
+}
+
+/* Desktop styles (> 1024px) */
+@media only screen and (min-width: 1025px) {
+  .routerView {
+    margin-block: 24px;
+    margin-inline: var(--yt-spacing-lg, 24px);
+  }
+
+  .banner {
+    inline-size: 85%;
+  }
+}
