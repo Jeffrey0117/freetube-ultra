@@ -434,7 +434,11 @@ export default defineComponent({
         this.channelName = result.basic_info.author ?? result.secondary_info.owner?.author.name
 
         if (result.secondary_info.owner?.author) {
-          this.channelThumbnail = result.secondary_info.owner.author.best_thumbnail?.url ?? ''
+          const thumbUrl = result.secondary_info.owner.author.best_thumbnail?.url ?? ''
+          // Convert ggpht URLs to proxy URLs to avoid CORS issues
+          this.channelThumbnail = thumbUrl
+            ? youtubeImageUrlToInvidious(thumbUrl, this.currentInvidiousInstanceUrl)
+            : ''
         } else {
           this.channelThumbnail = ''
         }
