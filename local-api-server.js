@@ -174,6 +174,27 @@ function toGgphtProxyUrl(url) {
   return url
 }
 
+// 將影片縮圖 URL 轉換為 Proxy URL
+// 使用相對路徑，讓瀏覽器自動使用當前 host (支援 Cloudflare Tunnel)
+function toVideoThumbnailProxyUrl(url) {
+  if (!url) return ''
+  // 轉換 i.ytimg.com URL 為 proxy (例如 /vi/VIDEO_ID/filename.jpg 或 /vi_webp/VIDEO_ID/filename.webp)
+  const match = url.match(/^https?:\/\/i\.ytimg\.com\/((vi|vi_webp)\/[^/]+\/.+)$/)
+  if (match) {
+    return `/${match[1]}`
+  }
+  return url
+}
+
+// 轉換 videoThumbnails 陣列中的 URL
+function convertVideoThumbnails(thumbnails) {
+  if (!thumbnails || !Array.isArray(thumbnails)) return []
+  return thumbnails.map(thumb => ({
+    ...thumb,
+    url: toVideoThumbnailProxyUrl(thumb.url)
+  }))
+}
+
 // 建立標準化的 authorThumbnails 陣列
 function createAuthorThumbnails(avatarUrl) {
   const url = toGgphtProxyUrl(avatarUrl)
@@ -359,12 +380,12 @@ function convertRelatedVideos(relatedVideos) {
       durationSeconds = 0
     }
 
-    // 使用完整 URL (避免前端解析到錯誤的 host)
+    // 使用相對路徑，讓瀏覽器自動使用當前 host (支援 Cloudflare Tunnel 遠程訪問)
     const videoThumbnails = [
-      { quality: 'maxres', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/maxresdefault.jpg`, width: 1280, height: 720 },
-      { quality: 'high', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
-      { quality: 'medium', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
-      { quality: 'default', url: `http://${HOST_IP}:${PORT}/vi/${videoId}/default.jpg`, width: 120, height: 90 },
+      { quality: 'maxres', url: `/vi/${videoId}/maxresdefault.jpg`, width: 1280, height: 720 },
+      { quality: 'high', url: `/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
+      { quality: 'medium', url: `/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
+      { quality: 'default', url: `/vi/${videoId}/default.jpg`, width: 120, height: 90 },
     ]
 
     return {
@@ -639,7 +660,7 @@ async function convertVideoInfo(info, relatedVideos, channelAvatar = null) {
     type: 'video',
     title: details.title || '',
     videoId: details.id,
-    videoThumbnails: details.thumbnail || [],
+    videoThumbnails: convertVideoThumbnails(details.thumbnail || []),
     description: details.short_description || '',
     descriptionHtml: details.short_description || '',
     published: details.publish_date || '',
