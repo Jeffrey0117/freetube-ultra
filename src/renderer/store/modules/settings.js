@@ -309,7 +309,7 @@ const state = {
 
   // The settings below have side effects
   currentLocale: 'system',
-  defaultInvidiousInstance: 'http://192.168.0.181:3001',
+  defaultInvidiousInstance: 'http://localhost:3001',
   defaultVolume: 1,
   uiScale: 100,
   userPlaylistsSortBy: 'latest_played_first',

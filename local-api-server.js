@@ -5,10 +5,26 @@
 
 const http = require('http')
 const https = require('https')
+const os = require('os')
 const { Innertube, ClientType } = require('youtubei.js')
 
-const PORT = 3001
-const HOST_IP = '192.168.0.181' // 改成你的電腦 IP
+const PORT = process.env.PORT || 3001
+
+// 自動偵測本機 IP
+function getLocalIP() {
+  const interfaces = os.networkInterfaces()
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // 跳過 loopback 和非 IPv4
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address
+      }
+    }
+  }
+  return 'localhost'
+}
+
+const HOST_IP = process.env.HOST_IP || getLocalIP()
 
 let innertube = null
 let innertubeAndroid = null
@@ -775,6 +791,7 @@ const server = http.createServer(async (req, res) => {
         console.log(`  [GGPHT] Trying googleusercontent: ${googleUrl}`)
 
         https.get(googleUrl, (proxyRes) => {
+          console.log(`  [GGPHT] googleusercontent status: ${proxyRes.statusCode}`)
           if (proxyRes.statusCode === 200) {
             res.writeHead(200, {
               'Content-Type': proxyRes.headers['content-type'] || 'image/jpeg',
@@ -782,12 +799,15 @@ const server = http.createServer(async (req, res) => {
               'Access-Control-Allow-Origin': '*',
             })
             proxyRes.pipe(res)
+            proxyRes.on('end', () => console.log(`  [GGPHT] googleusercontent SUCCESS`))
           } else {
             // googleusercontent 也失敗，嘗試 ggpht.com
+            console.log(`  [GGPHT] googleusercontent failed, trying ggpht...`)
             proxyRes.resume() // drain the response
             tryGgpht()
           }
-        }).on('error', () => {
+        }).on('error', (e) => {
+          console.log(`  [GGPHT] googleusercontent error: ${e.message}`)
           tryGgpht()
         })
       }
