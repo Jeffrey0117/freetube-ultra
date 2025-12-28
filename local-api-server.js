@@ -53,6 +53,38 @@ function toProxyUrl(originalUrl) {
   return `http://${HOST_IP}:${PORT}/videoplayback?url=${encoded}`
 }
 
+// 將 ggpht URL 轉換為 Proxy URL (頻道頭像/Banner)
+function toGgphtProxyUrl(url) {
+  if (!url) return ''
+  // 處理 protocol-relative URL
+  if (url.startsWith('//')) {
+    url = 'https:' + url
+  }
+  // 轉換 ggpht URL - 返回完整 URL
+  if (url.includes('yt3.ggpht.com')) {
+    const ggphtPath = url.replace(/^https?:\/\/yt3\.ggpht\.com/, '')
+    return `http://${HOST_IP}:${PORT}/ggpht${ggphtPath}`
+  }
+  // 轉換 googleusercontent URL (有些頭像用這個) - 返回完整 URL
+  if (url.includes('googleusercontent.com')) {
+    const encoded = Buffer.from(url).toString('base64url')
+    return `http://${HOST_IP}:${PORT}/imgproxy?url=${encoded}`
+  }
+  return url
+}
+
+// 建立標準化的 authorThumbnails 陣列
+function createAuthorThumbnails(avatarUrl) {
+  const url = toGgphtProxyUrl(avatarUrl)
+  if (!url) return []
+  return [
+    { url, width: 32, height: 32 },
+    { url, width: 48, height: 48 },
+    { url, width: 76, height: 76 },
+    { url, width: 176, height: 176 },
+  ]
+}
+
 // 轉換搜尋結果為 Invidious 格式
 function convertSearchResults(results) {
   return results.map(item => {
@@ -233,10 +265,189 @@ function parseDuration(durationStr) {
   return 0
 }
 
+// 轉換頻道影片為 Invidious 格式
+function convertChannelVideos(videos, channelId) {
+  return videos.map(video => {
+    const videoId = video.id
+    if (!videoId) return null
+
+    const videoThumbnails = [
+      { quality: 'maxres', url: `/vi/${videoId}/maxresdefault.jpg`, width: 1280, height: 720 },
+      { quality: 'high', url: `/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
+      { quality: 'medium', url: `/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
+      { quality: 'default', url: `/vi/${videoId}/default.jpg`, width: 120, height: 90 },
+    ]
+
+    // 解析觀看數
+    let viewCount = 0
+    const viewText = video.view_count?.text || video.short_view_count?.text || ''
+    if (viewText) {
+      const match = viewText.match(/([\d,.]+)\s*([KMB萬億次])?/i)
+      if (match) {
+        let num = parseFloat(match[1].replace(/,/g, ''))
+        const unit = (match[2] || '').toUpperCase()
+        if (unit === 'K' || unit === '萬') num *= 1000
+        else if (unit === 'M' || unit === '億') num *= 1000000
+        else if (unit === 'B') num *= 1000000000
+        viewCount = Math.floor(num)
+      }
+    }
+
+    return {
+      type: 'video',
+      title: video.title?.text || '',
+      videoId: videoId,
+      author: video.author?.name || '',
+      authorId: channelId,
+      authorUrl: `/channel/${channelId}`,
+      videoThumbnails: videoThumbnails,
+      description: '',
+      viewCount: viewCount,
+      viewCountText: viewText,
+      published: 0,
+      publishedText: video.published?.text || '',
+      lengthSeconds: video.duration?.seconds || 0,
+      liveNow: video.is_live || false,
+      isUpcoming: video.is_upcoming || false,
+    }
+  }).filter(Boolean)
+}
+
+// 處理頻道子資源 (videos, shorts, playlists, community)
+async function handleChannelSubResource(res, channel, channelId, subResource, query) {
+  const sortBy = query.sort_by || 'newest'
+  const continuation = query.continuation || null
+
+  try {
+    let data = { videos: [], continuation: null }
+
+    switch (subResource) {
+      case 'videos': {
+        const videosTab = await channel.getVideos()
+        const videos = convertChannelVideos(videosTab.videos || [], channelId)
+        data = {
+          videos: videos,
+          continuation: videosTab.has_continuation ? 'has_more' : null
+        }
+        break
+      }
+
+      case 'shorts': {
+        if (channel.has_shorts) {
+          const shortsTab = await channel.getShorts()
+          const videos = (shortsTab.videos || []).map(video => {
+            const videoId = video.id
+            if (!videoId) return null
+            return {
+              type: 'video',
+              title: video.title?.text || '',
+              videoId: videoId,
+              author: '',
+              authorId: channelId,
+              authorUrl: `/channel/${channelId}`,
+              videoThumbnails: [
+                { quality: 'maxres', url: `/vi/${videoId}/maxresdefault.jpg`, width: 1280, height: 720 },
+              ],
+              viewCount: 0,
+              viewCountText: video.views?.text || '',
+              lengthSeconds: 60, // Shorts 通常很短
+              liveNow: false,
+            }
+          }).filter(Boolean)
+          data = {
+            videos: videos,
+            continuation: shortsTab.has_continuation ? 'has_more' : null
+          }
+        }
+        break
+      }
+
+      case 'playlists': {
+        if (channel.has_playlists) {
+          const playlistsTab = await channel.getPlaylists()
+          const playlists = (playlistsTab.playlists || []).map(playlist => ({
+            type: 'playlist',
+            title: playlist.title?.text || '',
+            playlistId: playlist.id,
+            playlistThumbnail: `/vi/${playlist.first_video_id}/mqdefault.jpg`,
+            author: channel.metadata?.title || '',
+            authorId: channelId,
+            videoCount: playlist.video_count || 0,
+          }))
+          data = {
+            playlists: playlists,
+            continuation: playlistsTab.has_continuation ? 'has_more' : null
+          }
+        }
+        break
+      }
+
+      case 'community':
+      case 'posts': {
+        if (channel.has_community) {
+          const communityTab = await channel.getCommunity()
+          const channelName = channel.metadata?.title || ''
+          const channelAvatar = channel.metadata?.avatar?.[0]?.url || ''
+
+          const posts = (communityTab.posts || []).map(post => {
+            // 轉換為 Invidious 格式
+            return {
+              author: channelName,
+              authorId: channelId,
+              authorThumbnails: createAuthorThumbnails(channelAvatar),
+              authorUrl: `/channel/${channelId}`,
+              commentId: post.id || '',
+              content: post.content?.text || '',
+              contentHtml: post.content?.text || '', // Invidious 需要這個欄位
+              likeCount: 0,
+              publishedText: post.published?.text || '',
+              replyCount: 0,
+              attachment: null,
+            }
+          })
+          data = {
+            comments: posts,
+            continuation: communityTab.has_continuation ? 'has_more' : null
+          }
+        }
+        break
+      }
+
+      case 'live':
+      case 'streams': {
+        if (channel.has_live_streams) {
+          const liveTab = await channel.getLiveStreams()
+          const videos = convertChannelVideos(liveTab.videos || [], channelId)
+          data = {
+            videos: videos,
+            continuation: liveTab.has_continuation ? 'has_more' : null
+          }
+        }
+        break
+      }
+
+      default:
+        res.writeHead(404)
+        res.end(JSON.stringify({ error: `Unknown sub-resource: ${subResource}` }))
+        return
+    }
+
+    res.writeHead(200)
+    res.end(JSON.stringify(data))
+  } catch (e) {
+    console.error(`  Sub-resource error: ${e.message}`)
+    res.writeHead(500)
+    res.end(JSON.stringify({ error: e.message }))
+  }
+}
+
 // 轉換影片資訊為 Invidious 格式 (含 Proxy URL)
-async function convertVideoInfo(info, relatedVideos) {
+async function convertVideoInfo(info, relatedVideos, channelAvatar = null) {
   const details = info.basic_info
   const streaming = info.streaming_data
+
+  // 建立頻道頭像 (如果有傳入)
+  const authorThumbnails = channelAvatar ? createAuthorThumbnails(channelAvatar) : []
 
   // 格式化串流 - 使用 proxy URL
   const formatStreams = []
@@ -303,7 +514,7 @@ async function convertVideoInfo(info, relatedVideos) {
     author: details.author || '',
     authorId: details.channel_id || '',
     authorUrl: `/channel/${details.channel_id || ''}`,
-    authorThumbnails: [],
+    authorThumbnails: authorThumbnails,
     subCountText: '',
     lengthSeconds: details.duration || 0,
     allowRatings: true,
@@ -447,6 +658,32 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // === 通用圖片代理 (googleusercontent 等) ===
+    if (path === '/imgproxy') {
+      const encodedUrl = query.url
+      if (!encodedUrl) {
+        res.writeHead(400)
+        res.end('Missing url parameter')
+        return
+      }
+
+      const targetUrl = Buffer.from(encodedUrl, 'base64url').toString('utf-8')
+      console.log(`  [IMGPROXY] ${targetUrl}`)
+
+      https.get(targetUrl, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode, {
+          'Content-Type': proxyRes.headers['content-type'] || 'image/jpeg',
+          'Cache-Control': 'public, max-age=86400',
+          'Access-Control-Allow-Origin': '*',
+        })
+        proxyRes.pipe(res)
+      }).on('error', (e) => {
+        res.writeHead(404)
+        res.end('Not found')
+      })
+      return
+    }
+
     // === 影片串流代理 ===
     if (path === '/videoplayback') {
       const encodedUrl = query.url
@@ -493,40 +730,121 @@ const server = http.createServer(async (req, res) => {
       // 用 Android client 取得影片，URL 不需要解密
       const info = await innertubeAndroid.getBasicInfo(videoId)
 
-      // 用一般 client 取得相關影片 (Android client 沒有 watch_next_feed)
+      // 用一般 client 取得相關影片和頻道頭像 (Android client 沒有 watch_next_feed)
       let relatedVideos = []
+      let channelAvatar = null
       try {
         const fullInfo = await innertube.getInfo(videoId)
         relatedVideos = fullInfo.watch_next_feed || []
         console.log(`  Found ${relatedVideos.length} related videos`)
+
+        // 嘗試從 secondary_info 取得頻道頭像
+        const secondaryInfo = fullInfo.secondary_info
+        if (secondaryInfo?.owner?.author?.thumbnails?.[0]?.url) {
+          channelAvatar = secondaryInfo.owner.author.thumbnails[0].url
+          console.log(`  Found channel avatar`)
+        }
       } catch (e) {
         console.log(`  Could not get related videos: ${e.message}`)
       }
 
-      const converted = await convertVideoInfo(info, relatedVideos)
+      const converted = await convertVideoInfo(info, relatedVideos, channelAvatar)
       res.writeHead(200)
       res.end(JSON.stringify(converted))
       return
     }
 
-    // 頻道資訊
-    const channelMatch = path.match(/^\/api\/v1\/channels\/([a-zA-Z0-9_-]+)/)
+    // 頻道資訊 (支援子路徑: /videos, /shorts, /playlists, /community)
+    const channelMatch = path.match(/^\/api\/v1\/channels\/([a-zA-Z0-9_-]+)(\/([a-z]+))?/)
     if (channelMatch) {
       const channelId = channelMatch[1]
-      const channel = await innertube.getChannel(channelId)
-      res.writeHead(200)
-      res.end(JSON.stringify({
-        author: channel.metadata?.title || '',
-        authorId: channelId,
-        authorBanners: channel.metadata?.banner || [],
-        authorThumbnails: channel.metadata?.avatar || [],
-        description: channel.metadata?.description || '',
-        subCount: 0,
-        totalViews: 0,
-        joined: 0,
-        latestVideos: [],
-      }))
-      return
+      const subResource = channelMatch[3] // videos, shorts, playlists, community, etc.
+
+      console.log(`  Fetching channel: ${channelId}, subResource: ${subResource || 'info'}`)
+
+      try {
+        const channel = await innertube.getChannel(channelId)
+
+        // 如果是子資源請求 (videos, shorts, etc.)
+        if (subResource) {
+          return await handleChannelSubResource(res, channel, channelId, subResource, query)
+        }
+
+        // 主頻道資訊
+        const metadata = channel.metadata || {}
+
+        // 取得可用的 tabs
+        const tabs = []
+        if (channel.has_videos) tabs.push('videos')
+        if (channel.has_shorts) tabs.push('shorts')
+        if (channel.has_live_streams) tabs.push('live')
+        if (channel.has_playlists) tabs.push('playlists')
+        if (channel.has_community) tabs.push('community')
+        tabs.push('about')
+
+        // 轉換頭像
+        const avatarUrl = metadata.avatar?.[0]?.url || ''
+        const authorThumbnails = createAuthorThumbnails(avatarUrl)
+
+        // 轉換 Banner
+        const bannerUrl = metadata.banner?.[0]?.url || ''
+        const authorBanners = bannerUrl ? [
+          { url: toGgphtProxyUrl(bannerUrl), width: 1280, height: 720 }
+        ] : []
+
+        // 解析訂閱數
+        let subCount = 0
+        const subText = metadata.subscriber_count || ''
+        if (subText) {
+          const match = subText.match(/([\d.]+)\s*([KMB萬億])?/i)
+          if (match) {
+            let num = parseFloat(match[1])
+            const unit = (match[2] || '').toUpperCase()
+            if (unit === 'K' || unit === '萬') num *= 1000
+            else if (unit === 'M' || unit === '億') num *= 1000000
+            else if (unit === 'B') num *= 1000000000
+            subCount = Math.floor(num)
+          }
+        }
+
+        // 取得最新影片
+        let latestVideos = []
+        try {
+          if (channel.has_videos) {
+            const videosTab = await channel.getVideos()
+            latestVideos = convertChannelVideos(videosTab.videos || [], channelId)
+          }
+        } catch (e) {
+          console.log(`  Could not fetch latest videos: ${e.message}`)
+        }
+
+        res.writeHead(200)
+        res.end(JSON.stringify({
+          author: metadata.title || '',
+          authorId: channelId,
+          authorUrl: `/channel/${channelId}`,
+          authorVerified: false,
+          authorBanners: authorBanners,
+          authorThumbnails: authorThumbnails,
+          subCount: subCount,
+          totalViews: 0,
+          joined: 0,
+          autoGenerated: false,
+          isFamilyFriendly: metadata.is_family_safe ?? true,
+          description: metadata.description || '',
+          descriptionHtml: metadata.description || '',
+          allowedRegions: [],
+          tabs: tabs,
+          latestVideos: latestVideos,
+          relatedChannels: [],
+        }))
+        return
+      } catch (e) {
+        console.error(`  Channel error: ${e.message}`)
+        res.writeHead(500)
+        res.end(JSON.stringify({ error: e.message }))
+        return
+      }
     }
 
     // 熱門影片
