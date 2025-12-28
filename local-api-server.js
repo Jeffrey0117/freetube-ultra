@@ -63,17 +63,19 @@ function parseQuery(url) {
 }
 
 // 將原始 YouTube URL 轉換為 Proxy URL
+// 使用相對路徑，讓瀏覽器自動使用當前 host (支援 Cloudflare Tunnel 遠程訪問)
 function toProxyUrl(originalUrl) {
   if (!originalUrl) return ''
   const encoded = Buffer.from(originalUrl).toString('base64url')
-  return `http://${HOST_IP}:${PORT}/videoplayback?url=${encoded}`
+  return `/videoplayback?url=${encoded}`
 }
 
 // 將 DASH manifest URL 轉換為 Proxy URL
+// 使用相對路徑，讓瀏覽器自動使用當前 host (支援 Cloudflare Tunnel 遠程訪問)
 function toManifestProxyUrl(manifestUrl) {
   if (!manifestUrl) return ''
   const encoded = Buffer.from(manifestUrl).toString('base64url')
-  return `http://${HOST_IP}:${PORT}/manifest?url=${encoded}`
+  return `/manifest?url=${encoded}`
 }
 
 // 生成 DASH manifest XML
@@ -884,7 +886,8 @@ const server = http.createServer(async (req, res) => {
             /<BaseURL>([^<]+)<\/BaseURL>/g,
             (match, url) => {
               const encoded = Buffer.from(url).toString('base64url')
-              return `<BaseURL>http://${HOST_IP}:${PORT}/videoplayback?url=${encoded}</BaseURL>`
+              // 使用相對路徑，讓瀏覽器自動使用當前 host (支援 Cloudflare Tunnel 遠程訪問)
+              return `<BaseURL>/videoplayback?url=${encoded}</BaseURL>`
             }
           )
 
