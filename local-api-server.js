@@ -765,23 +765,54 @@ const server = http.createServer(async (req, res) => {
     }
 
     // === Thumbnail 代理 (頻道頭像) ===
+    // 支援 yt3.ggpht.com 和 yt3.googleusercontent.com 兩種來源
     if (path.startsWith('/ggpht/')) {
       const ggphtPath = path.replace('/ggpht', '')
-      const targetUrl = `https://yt3.ggpht.com${ggphtPath}`
 
-      console.log(`  [GGPHT] ${targetUrl}`)
+      // 先嘗試 googleusercontent.com (較新的 CDN)
+      const tryGoogleusercontent = () => {
+        const googleUrl = `https://yt3.googleusercontent.com${ggphtPath}`
+        console.log(`  [GGPHT] Trying googleusercontent: ${googleUrl}`)
 
-      https.get(targetUrl, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode, {
-          'Content-Type': proxyRes.headers['content-type'] || 'image/jpeg',
-          'Cache-Control': 'public, max-age=86400',
-          'Access-Control-Allow-Origin': '*',
+        https.get(googleUrl, (proxyRes) => {
+          if (proxyRes.statusCode === 200) {
+            res.writeHead(200, {
+              'Content-Type': proxyRes.headers['content-type'] || 'image/jpeg',
+              'Cache-Control': 'public, max-age=86400',
+              'Access-Control-Allow-Origin': '*',
+            })
+            proxyRes.pipe(res)
+          } else {
+            // googleusercontent 也失敗，嘗試 ggpht.com
+            proxyRes.resume() // drain the response
+            tryGgpht()
+          }
+        }).on('error', () => {
+          tryGgpht()
         })
-        proxyRes.pipe(res)
-      }).on('error', (e) => {
-        res.writeHead(404)
-        res.end('Not found')
-      })
+      }
+
+      // 嘗試 ggpht.com (原始 CDN)
+      const tryGgpht = () => {
+        const ggphtUrl = `https://yt3.ggpht.com${ggphtPath}`
+        console.log(`  [GGPHT] Trying ggpht: ${ggphtUrl}`)
+
+        https.get(ggphtUrl, (proxyRes) => {
+          res.writeHead(proxyRes.statusCode, {
+            'Content-Type': proxyRes.headers['content-type'] || 'image/jpeg',
+            'Cache-Control': 'public, max-age=86400',
+            'Access-Control-Allow-Origin': '*',
+          })
+          proxyRes.pipe(res)
+        }).on('error', (e) => {
+          console.error(`  [GGPHT] Both CDNs failed for ${ggphtPath}`)
+          res.writeHead(404)
+          res.end('Not found')
+        })
+      }
+
+      // 開始嘗試
+      tryGoogleusercontent()
       return
     }
 
