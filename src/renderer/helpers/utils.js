@@ -7,7 +7,10 @@ import { UnsupportedPlayerActions } from '../../constants'
 // https://support.google.com/youtube/answer/11585688#change_handle
 export const CHANNEL_HANDLE_REGEX = /^@[\w.-]{3,30}$/
 
-const PUBLISHED_TEXT_REGEX = /(\d+)\s?([a-z]+)/i
+// Support English and Chinese time formats
+// English: "9 months ago", "3 days ago"
+// Chinese: "9 個月前", "3 天前"
+const PUBLISHED_TEXT_REGEX = /(\d+)\s?([a-z\u4e00-\u9fff]+)/i
 
 /**
  * @param {string} sortPreference
@@ -84,20 +87,22 @@ export function calculatePublishedDate(publishedText, isLive = false, isUpcoming
   const timeAmount = parseInt(match[1])
   let timeSpan = null
 
-  if (timeFrame.startsWith('second') || timeFrame === 's') {
+  // English: second/s, minute/m, hour/h, day/d, week/w, month/mo, year/y
+  // Chinese: 秒前, 分鐘前, 小時前, 天前, 週前, 個月前, 年前
+  if (timeFrame.startsWith('second') || timeFrame === 's' || timeFrame.includes('秒')) {
     timeSpan = timeAmount * 1000
-  } else if (timeFrame.startsWith('minute') || timeFrame === 'm') {
+  } else if (timeFrame.startsWith('minute') || timeFrame === 'm' || timeFrame.includes('分')) {
     timeSpan = timeAmount * 60000
-  } else if (timeFrame.startsWith('hour') || timeFrame === 'h') {
+  } else if (timeFrame.startsWith('hour') || timeFrame === 'h' || timeFrame.includes('小時')) {
     timeSpan = timeAmount * 3600000
-  } else if (timeFrame.startsWith('day') || timeFrame === 'd') {
+  } else if (timeFrame.startsWith('day') || timeFrame === 'd' || timeFrame.includes('天')) {
     timeSpan = timeAmount * 86400000
-  } else if (timeFrame.startsWith('week') || timeFrame === 'w') {
+  } else if (timeFrame.startsWith('week') || timeFrame === 'w' || timeFrame.includes('週')) {
     timeSpan = timeAmount * 604800000
-  } else if (timeFrame.startsWith('month') || timeFrame === 'mo') {
+  } else if (timeFrame.startsWith('month') || timeFrame === 'mo' || timeFrame.includes('月')) {
     // 30 day month being used
     timeSpan = timeAmount * 2592000000
-  } else if (timeFrame.startsWith('year') || timeFrame === 'y') {
+  } else if (timeFrame.startsWith('year') || timeFrame === 'y' || timeFrame.includes('年')) {
     timeSpan = timeAmount * 31556952000
   }
 
