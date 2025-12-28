@@ -679,7 +679,8 @@ async function getChannelLocal() {
       channelThumbnailUrl = ageGate.avatar[0].url
 
       channelName.value = channelName
-      thumbnailUrl.value = channelThumbnailUrl
+      // Convert ggpht/googleusercontent URLs to proxy URLs to avoid CORS issues
+      thumbnailUrl.value = youtubeImageUrlToInvidious(channelThumbnailUrl, currentInvidiousInstanceUrl.value)
 
       store.commit('setAppTitle', `${channelName_} - ${packageDetails.productName}`)
 
@@ -708,8 +709,13 @@ async function getChannelLocal() {
     }
 
     channelName.value = channelName_
+    // Convert ggpht/googleusercontent URLs to proxy URLs to avoid CORS issues
     thumbnailUrl.value = channelThumbnailUrl
-    bannerUrl.value = parsedHeader.bannerUrl ?? null
+      ? youtubeImageUrlToInvidious(channelThumbnailUrl, currentInvidiousInstanceUrl.value)
+      : ''
+    bannerUrl.value = parsedHeader.bannerUrl
+      ? youtubeImageUrlToInvidious(parsedHeader.bannerUrl, currentInvidiousInstanceUrl.value)
+      : null
     isFamilyFriendly.value = !!channelInstance.metadata.is_family_safe
     isArtistTopicChannel.value = channelName_.endsWith('- Topic') && !!channelInstance.metadata.music_artist_name
 
