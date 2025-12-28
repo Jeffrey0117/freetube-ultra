@@ -741,11 +741,12 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // === Thumbnail 代理 (影片) ===
-    const thumbMatch = path.match(/^\/vi\/([a-zA-Z0-9_-]+)\/(.+)$/)
+    const thumbMatch = path.match(/^\/(vi|vi_webp)\/([a-zA-Z0-9_-]+)\/(.+)$/)
     if (thumbMatch) {
-      const videoId = thumbMatch[1]
-      const filename = thumbMatch[2]
-      const targetUrl = `https://i.ytimg.com/vi/${videoId}/${filename}`
+      const viPath = thumbMatch[1]  // vi or vi_webp
+      const videoId = thumbMatch[2]
+      const filename = thumbMatch[3]
+      const targetUrl = `https://i.ytimg.com/${viPath}/${videoId}/${filename}`
 
       console.log(`  [THUMB] ${targetUrl}`)
 

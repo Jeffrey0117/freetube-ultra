@@ -584,10 +584,18 @@ export function youtubeImageUrlToInvidious(url, currentInstance = null) {
   if (url.startsWith('//')) {
     url = 'https:' + url
   }
-  const newUrl = `${currentInstance}/ggpht`
-  return url.replace('https://yt3.ggpht.com', newUrl)
-    .replace('https://yt3.googleusercontent.com', newUrl)
-    .replace(/https:\/\/i\d*\.ytimg\.com/, newUrl)
+  const ggphtUrl = `${currentInstance}/ggpht`
+
+  // Handle ytimg.com video thumbnails - convert to /vi/ or /vi_webp/ paths
+  // e.g., https://i.ytimg.com/vi/VIDEO_ID/mqdefault.jpg -> /vi/VIDEO_ID/mqdefault.jpg
+  const ytimgMatch = url.match(/https?:\/\/i\d*\.ytimg\.com\/(vi|vi_webp)\/(.+)/)
+  if (ytimgMatch) {
+    return `${currentInstance}/${ytimgMatch[1]}/${ytimgMatch[2]}`
+  }
+
+  // Handle channel avatars and other ggpht URLs
+  return url.replace('https://yt3.ggpht.com', ggphtUrl)
+    .replace('https://yt3.googleusercontent.com', ggphtUrl)
 }
 
 /**
