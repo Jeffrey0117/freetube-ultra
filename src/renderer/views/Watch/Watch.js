@@ -1,6 +1,8 @@
 import { defineComponent } from 'vue'
 import { mapActions, mapMutations } from 'vuex'
 import shaka from 'shaka-player'
+
+console.log('[DEBUG] Watch.js loaded - SUPPORTS_LOCAL_API:', process.env.SUPPORTS_LOCAL_API)
 import { Utils, YTNodes } from 'youtubei.js'
 import FtLoader from '../../components/FtLoader/FtLoader.vue'
 import FtShakaVideoPlayer from '../../components/ft-shaka-video-player/ft-shaka-video-player.vue'
@@ -357,6 +359,7 @@ export default defineComponent({
       // this has to be below checkIfPlaylist() as theatrePossible needs to know if there is a playlist or not
       this.setViewingModeOnFirstLoad()
 
+      console.log('[DEBUG] Decision point: SUPPORTS_LOCAL_API=', process.env.SUPPORTS_LOCAL_API, 'backendPreference=', this.backendPreference)
       if (!process.env.SUPPORTS_LOCAL_API || this.backendPreference === 'invidious') {
         this.getVideoInformationInvidious()
       } else {
@@ -397,6 +400,7 @@ export default defineComponent({
     },
 
     getVideoInformationLocal: async function () {
+      console.log('[DEBUG] getVideoInformationLocal called')
       if (this.firstLoad) {
         this.isLoading = true
       }
@@ -851,12 +855,21 @@ export default defineComponent({
     },
 
     getVideoInformationInvidious: function () {
+      console.log('[DEBUG] getVideoInformationInvidious called')
       if (this.firstLoad) {
         this.isLoading = true
       }
 
       invidiousGetVideoInformation(this.videoId)
         .then(async result => {
+          console.log('[DEBUG] getVideoInformationInvidious .then() received result:', {
+            hasError: !!result.error,
+            errorMessage: result.errorMessage,
+            liveNow: result.liveNow,
+            isPostLiveDvr: result.isPostLiveDvr,
+            adaptiveFormatsCount: result.adaptiveFormats?.length,
+            dashUrl: result.dashUrl,
+          })
           if (result.error) {
             throw new Error(result.error)
           }
@@ -986,8 +999,11 @@ export default defineComponent({
 
             let hlsManifestUrl = result.hlsUrl
 
-            if (this.proxyVideos) {
-              const url = new URL(hlsManifestUrl)
+            if (this.proxyVideos && hlsManifestUrl) {
+              // 支援相對路徑 URL (來自 local-api-server)
+              const url = hlsManifestUrl.startsWith('/')
+                ? new URL(hlsManifestUrl, window.location.origin)
+                : new URL(hlsManifestUrl)
               url.searchParams.set('local', 'true')
               hlsManifestUrl = url.toString()
             }
@@ -1059,7 +1075,9 @@ export default defineComponent({
               return object
             }))
 
+            console.log('[DEBUG Watch] About to call createInvidiousDashManifest, result.dashUrl:', result.dashUrl)
             this.manifestSrc = await this.createInvidiousDashManifest(result)
+            console.log('[DEBUG Watch] manifestSrc set to:', this.manifestSrc?.substring(0, 100))
             this.manifestMimeType = MANIFEST_TYPE_DASH
           }
 
@@ -1084,7 +1102,14 @@ export default defineComponent({
     },
 
     extractExpiryDateFromStreamingUrl: function (url) {
-      const expireString = new URL(url).searchParams.get('expire')
+      // 支援相對路徑 URL (來自 local-api-server)
+      let parsedUrl
+      if (url.startsWith('/')) {
+        parsedUrl = new URL(url, window.location.origin)
+      } else {
+        parsedUrl = new URL(url)
+      }
+      const expireString = parsedUrl.searchParams.get('expire')
 
       return new Date(parseInt(expireString) * 1000)
     },
@@ -1547,6 +1572,16 @@ export default defineComponent({
 
     createInvidiousDashManifest: async function (result) {
       let url = `${this.currentInvidiousInstanceUrl}/api/manifest/dash/id/${this.videoId}`
+
+      // 如果 API 返回了相對路徑的 dashUrl (來自 local-api-server)，直接使用
+      // 這樣可以避免客戶端 XML 生成的問題，改用伺服器端的 DASH manifest
+      console.log('[DEBUG] createInvidiousDashManifest - result.dashUrl:', result.dashUrl)
+      if (result.dashUrl && result.dashUrl.startsWith('/')) {
+        const manifestUrl = `${window.location.origin}${result.dashUrl}`
+        console.log('[DEBUG] Using server-side DASH manifest:', manifestUrl)
+        return manifestUrl
+      }
+      console.log('[DEBUG] Falling back to local manifest generation')
 
       // If we are in Electron,
       // we can use YouTube.js' DASH manifest generator to generate the manifest.

@@ -649,6 +649,11 @@ async function convertVideoInfo(info, relatedVideos, channelAvatar = null) {
         audioQuality: f.audio_quality,
         audioSampleRate: f.audio_sample_rate,
         audioChannels: f.audio_channels,
+        // Invidious 格式需要的額外欄位
+        init: f.init_range ? `${f.init_range.start}-${f.init_range.end}` : '0-0',
+        index: f.index_range ? `${f.index_range.start}-${f.index_range.end}` : '0-0',
+        clen: f.content_length || 0,
+        lmt: f.last_modified || '',
       })
     }
   }
@@ -686,7 +691,9 @@ async function convertVideoInfo(info, relatedVideos, channelAvatar = null) {
     liveNow: details.is_live || false,
     isUpcoming: details.is_upcoming || false,
     hlsUrl: streaming?.hls_manifest_url || null,
-    dashUrl: streaming?.dash_manifest_url ? toManifestProxyUrl(streaming.dash_manifest_url) : null,
+    // 使用我們自己的 DASH manifest 端點，避免客戶端生成 XML 時的問題
+    // 相對路徑會讓瀏覽器自動使用當前 host (支援 Cloudflare Tunnel 遠程訪問)
+    dashUrl: `/api/manifest/dash/id/${details.id}`,
     adaptiveFormats: adaptiveFormats,
     formatStreams: formatStreams,
     captions: [],

@@ -26,6 +26,12 @@ function getCurrentInstanceUrl() {
  * @param {string} uri
  */
 export function getProxyUrl(uri) {
+  // 如果是相對路徑 (來自本地 API server)，直接返回
+  // 相對路徑會自動使用當前的 host，不需要代理處理
+  if (uri.startsWith('/')) {
+    return uri
+  }
+
   const currentInstance = getCurrentInstanceUrl()
 
   const url = new URL(uri)
@@ -856,7 +862,12 @@ export async function generateInvidiousDashManifestLocally(formats) {
      * @param {URL} url
      */
     urlTransformer = (url) => {
-      return new URL(getProxyUrl(url.toString()))
+      const proxyUrl = getProxyUrl(url.toString())
+      // 支援相對路徑 (來自 local-api-server)
+      if (proxyUrl.startsWith('/')) {
+        return new URL(proxyUrl, window.location.origin)
+      }
+      return new URL(proxyUrl)
     }
   }
 
@@ -869,9 +880,20 @@ export function convertInvidiousToLocalFormat(format) {
   const [initStart, initEnd] = format.init.split('-')
   const [indexStart, indexEnd] = format.index.split('-')
 
-  const url = new URL(format.url)
+  // 支援相對路徑 URL (來自 local-api-server 的 proxy URLs)
+  // 使用 window.location.origin 作為 fallback base URL
+  let url
+  if (format.url.startsWith('/')) {
+    const baseUrl = store.getters.getCurrentInvidiousInstanceUrl || window.location.origin
+    url = new URL(format.url, baseUrl)
+  } else {
+    url = new URL(format.url)
+  }
 
-  const duration = parseInt(parseFloat(url.searchParams.get('dur')) * 1000)
+  // 從 URL 參數取得 duration，如果沒有則為 0
+  // 我們的 proxy URL 可能沒有 dur 參數
+  const durParam = url.searchParams.get('dur')
+  const duration = durParam ? parseInt(parseFloat(durParam) * 1000) : 0
 
   // only converts the properties that are needed to generate a DASH manifest with YouTube.js
   // audioQuality and qualityLabel don't go inside the DASH manifest, but are used by YouTube.js
@@ -893,7 +915,8 @@ export function convertInvidiousToLocalFormat(format) {
     },
     // lastModified: format.lmt,
     // contentLength: format.clen,
-    url: format.url,
+    // YouTubei.js 內部會用 new URL() 解析，所以必須是絕對 URL
+    url: url.toString(),
     approxDurationMs: duration,
     ...(format.type.startsWith('audio/')
       ? {

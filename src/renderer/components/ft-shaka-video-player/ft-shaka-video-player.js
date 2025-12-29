@@ -1228,7 +1228,8 @@ export default defineComponent({
     /** @type {shaka.extern.RequestFilter} */
     function requestFilter(type, request, _context) {
       if (type === RequestType.SEGMENT) {
-        const url = new URL(request.uris[0])
+        const urlString = request.uris[0]
+        const url = urlString.startsWith('/') ? new URL(urlString, window.location.origin) : new URL(urlString)
 
         // only when we aren't proxying through Invidious,
         // it doesn't like the range param and makes get requests to youtube anyway
@@ -1272,7 +1273,8 @@ export default defineComponent({
           response.headers = redirectResponse.headers
           response.uri = redirectResponse.uri
         } else {
-          const url = new URL(response.uri)
+          const responseUri = response.uri
+          const url = responseUri.startsWith('/') ? new URL(responseUri, window.location.origin) : new URL(responseUri)
 
           // Fix positioning for auto-generated subtitles
           if (url.hostname.endsWith('.youtube.com') && url.pathname === '/api/timedtext' &&
@@ -1285,7 +1287,8 @@ export default defineComponent({
           }
         }
       } else if (type === RequestType.MANIFEST && context.type === AdvancedRequestType.MEDIA_PLAYLIST) {
-        const url = new URL(response.uri)
+        const manifestUri = response.uri
+        const url = manifestUri.startsWith('/') ? new URL(manifestUri, window.location.origin) : new URL(manifestUri)
 
         let modifiedText
 
@@ -2559,6 +2562,7 @@ export default defineComponent({
     // #region setup
 
     onMounted(async () => {
+      console.log('[DEBUG] ft-shaka-video-player onMounted - manifestSrc:', props.manifestSrc?.substring(0, 100), 'format:', props.format)
       const videoElement = video.value
 
       const volume = sessionStorage.getItem('volume')
@@ -2687,6 +2691,7 @@ export default defineComponent({
     async function performFirstLoad() {
       if (props.format === 'dash' || props.format === 'audio') {
         try {
+          console.log('[DEBUG performFirstLoad] manifestSrc:', props.manifestSrc?.substring(0, 100))
           await player.load(props.manifestSrc, props.startTime, props.manifestMimeType)
 
           if (defaultQuality.value !== 'auto') {

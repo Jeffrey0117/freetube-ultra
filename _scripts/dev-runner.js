@@ -212,6 +212,76 @@ function startRenderer(callback) {
   })
 }
 
+let apiServerProcess = null
+
+function startApiServer() {
+  return new Promise((resolve, reject) => {
+    console.log('\n🚀 Starting Local API Server...')
+
+    const apiServerPath = path.join(__dirname, '../local-api-server.js')
+    apiServerProcess = spawn('node', [apiServerPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PORT: '3001' }
+    })
+
+    let resolved = false
+
+    apiServerProcess.stdout.on('data', (data) => {
+      const output = data.toString()
+      process.stdout.write(`[API] ${output}`)
+
+      // 當看到 "ready" 相關訊息時表示啟動完成
+      if (!resolved && (output.includes('API:') || output.includes('YouTube.js ready'))) {
+        resolved = true
+        setTimeout(resolve, 500) // 給一點緩衝時間
+      }
+    })
+
+    apiServerProcess.stderr.on('data', (data) => {
+      process.stderr.write(`[API ERROR] ${data}`)
+    })
+
+    apiServerProcess.on('error', (err) => {
+      console.error('❌ Failed to start API server:', err.message)
+      reject(err)
+    })
+
+    apiServerProcess.on('exit', (code) => {
+      if (code !== 0 && code !== null) {
+        console.error(`❌ API server exited with code ${code}`)
+      }
+      apiServerProcess = null
+    })
+
+    // 超時處理
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        resolve() // 即使沒收到訊息也繼續
+      }
+    }, 10000)
+  })
+}
+
+function stopApiServer() {
+  if (apiServerProcess) {
+    console.log('\n🛑 Stopping API server...')
+    apiServerProcess.kill()
+    apiServerProcess = null
+  }
+}
+
+// 確保退出時清理
+process.on('exit', stopApiServer)
+process.on('SIGINT', () => {
+  stopApiServer()
+  process.exit(0)
+})
+process.on('SIGTERM', () => {
+  stopApiServer()
+  process.exit(0)
+})
+
 function startWeb () {
   const compiler = webpack(webConfig)
   const { name } = compiler
@@ -263,5 +333,23 @@ if (!web) {
     startMain()
   })
 } else {
-  startWeb()
+  // Web 模式：先啟動 API server，再啟動前端
+  console.log('\n' + '='.repeat(50))
+  console.log('  FreeTube Web Development Mode')
+  console.log('='.repeat(50))
+  console.log('\n  Will start:')
+  console.log('    1. Local API Server (port 3001)')
+  console.log('    2. Webpack Dev Server (port 9080)')
+  console.log('')
+
+  startApiServer()
+    .then(() => {
+      console.log('\n✅ API Server ready!')
+      console.log('\n🌐 Starting Webpack Dev Server...\n')
+      startWeb()
+    })
+    .catch((err) => {
+      console.error('Failed to start API server:', err)
+      process.exit(1)
+    })
 }
