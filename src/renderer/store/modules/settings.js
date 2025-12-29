@@ -169,7 +169,8 @@ const state = {
   secColor: 'Blue',
   defaultAutoplayInterruptionIntervalHours: 3,
   defaultCaptionSettings: '{}',
-  defaultInterval: 5,
+  // Web 模式立即播放下一個影片
+  defaultInterval: process.env.SUPPORTS_LOCAL_API ? 5 : 0,
   defaultPlayback: 1,
   defaultProfile: MAIN_PROFILE_ID,
   defaultQuality: '720',
