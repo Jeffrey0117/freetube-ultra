@@ -1411,7 +1411,9 @@ export default defineComponent({
       }
 
       const nextVideoInterval = this.defaultInterval
-      this.playNextTimeout = setTimeout(() => {
+
+      // 立即播放下一個影片的函數
+      const playNext = () => {
         const player = this.$refs.player
 
         if (player?.isPaused()) {
@@ -1425,7 +1427,17 @@ export default defineComponent({
           }
         }
         this.playNextTimeout = null
-      }, nextVideoInterval * 1000)
+      }
+
+      // 如果間隔是 0，直接導航（不用 setTimeout）
+      // 這樣可以保持 user gesture chain，讓瀏覽器允許自動播放
+      if (nextVideoInterval === 0) {
+        playNext()
+        return
+      }
+
+      // 有倒數時間才用 setTimeout
+      this.playNextTimeout = setTimeout(playNext, nextVideoInterval * 1000)
 
       if (nextVideoInterval > 0) {
         // No countdown for 0s interval
