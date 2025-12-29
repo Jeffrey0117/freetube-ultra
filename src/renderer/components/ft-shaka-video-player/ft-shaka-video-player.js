@@ -1,6 +1,7 @@
 import { computed, defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 import shaka from 'shaka-player'
 import { useI18n } from '../../composables/use-i18n-polyfill'
+import { useRoute } from 'vue-router'
 
 import store from '../../store/index'
 import { DefaultFolderKind, KeyboardShortcuts } from '../../../constants'
@@ -256,8 +257,15 @@ export default defineComponent({
     // #region settings
 
     /** @type {import('vue').ComputedRef<boolean>} */
+    const route = useRoute()
+
     const autoplayVideos = computed(() => {
       return store.getters.getAutoplayVideos
+    })
+
+    // 檢查 URL 參數是否有 autoplay=1，用於連續播放時強制自動播放
+    const forceAutoplay = computed(() => {
+      return route.query.autoplay === '1'
     })
 
     /** @type {import('vue').ComputedRef<boolean>} */
@@ -2841,30 +2849,42 @@ export default defineComponent({
       // Explicitly call play() when autoplay is enabled to handle browser autoplay policies
       // Browsers may block the autoplay attribute even after user interaction
       // Mobile browsers are especially strict about autoplay
-      if (autoplayVideos.value) {
+      if (autoplayVideos.value || forceAutoplay.value) {
         const video_ = video.value
         if (video_ && video_.paused) {
-          // Try to play - if blocked, try muted playback as fallback
-          video_.play().catch(error => {
-            console.log('[Autoplay] Browser prevented autoplay:', error.message)
-            // Mobile fallback: try playing muted first, then unmute
-            // This often works because muted autoplay is usually allowed
-            const originalMuted = video_.muted
-            video_.muted = true
+          // 如果是強制自動播放（連續播放），video 已經是 muted 狀態
+          // 直接播放，然後嘗試取消靜音
+          if (forceAutoplay.value) {
             video_.play().then(() => {
-              console.log('[Autoplay] Playing muted as fallback')
-              // Show a toast to let user know they need to unmute
-              // Optionally restore volume after a short delay if user interacts
+              console.log('[Autoplay] Force autoplay succeeded (muted)')
+              // 播放成功後嘗試取消靜音
               setTimeout(() => {
-                if (!originalMuted) {
-                  video_.muted = false
-                }
+                video_.muted = false
+                console.log('[Autoplay] Unmuted after force autoplay')
               }, 100)
             }).catch(err => {
-              console.log('[Autoplay] Even muted autoplay failed:', err.message)
-              video_.muted = originalMuted
+              console.log('[Autoplay] Force autoplay failed:', err.message)
             })
-          })
+          } else {
+            // Try to play - if blocked, try muted playback as fallback
+            video_.play().catch(error => {
+              console.log('[Autoplay] Browser prevented autoplay:', error.message)
+              // Mobile fallback: try playing muted first, then unmute
+              const originalMuted = video_.muted
+              video_.muted = true
+              video_.play().then(() => {
+                console.log('[Autoplay] Playing muted as fallback')
+                setTimeout(() => {
+                  if (!originalMuted) {
+                    video_.muted = false
+                  }
+                }, 100)
+              }).catch(err => {
+                console.log('[Autoplay] Even muted autoplay failed:', err.message)
+                video_.muted = originalMuted
+              })
+            })
+          }
         }
       }
     }
@@ -3177,6 +3197,7 @@ export default defineComponent({
       stats,
 
       autoplayVideos,
+      forceAutoplay,
       sponsorBlockShowSkippedToast,
 
       skippedSponsorBlockSegments,

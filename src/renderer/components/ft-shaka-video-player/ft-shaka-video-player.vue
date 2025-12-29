@@ -15,6 +15,7 @@
       crossorigin="anonymous"
       playsinline
       :autoplay="autoplayVideos ? true : null"
+      :muted="forceAutoplay"
       :poster="thumbnail"
       @play="handlePlay"
       @pause="handlePause"

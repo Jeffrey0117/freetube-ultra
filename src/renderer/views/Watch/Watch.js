@@ -1420,8 +1420,10 @@ export default defineComponent({
           if (this.watchingPlaylist) {
             this.$refs.watchVideoPlaylist.playNextVideo()
           } else {
+            // 加上 autoplay=1 參數，告訴下一個頁面要自動播放
             this.$router.push({
-              path: `/watch/${nextVideoId}`
+              path: `/watch/${nextVideoId}`,
+              query: { autoplay: '1' }
             })
             showToast(this.$t('Playing Next Video'))
           }
