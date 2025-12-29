@@ -1180,8 +1180,9 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // 熱門影片
-    if (path === '/api/v1/trending' || path === '/api/v1/trending/') {
+    // 熱門影片 (trending 和 popular 都返回相同內容)
+    if (path === '/api/v1/trending' || path === '/api/v1/trending/' ||
+        path === '/api/v1/popular' || path === '/api/v1/popular/') {
       const trending = await innertube.getTrending()
       const converted = convertSearchResults(trending.videos || [])
       res.writeHead(200)

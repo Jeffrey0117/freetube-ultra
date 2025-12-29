@@ -22,9 +22,10 @@ const router = createRouter({
       path: '/',
       name: 'default',
       meta: {
-        title: 'Subscriptions'
+        // Web 模式預設顯示 Popular (熱門影片)，Electron 模式顯示 Subscriptions
+        title: process.env.SUPPORTS_LOCAL_API ? 'Subscriptions' : 'Most Popular'
       },
-      component: Subscriptions
+      component: process.env.SUPPORTS_LOCAL_API ? Subscriptions : Popular
     },
     {
       path: '/subscriptions',
@@ -42,16 +43,15 @@ const router = createRouter({
       },
       component: SubscribedChannels
     },
-    ...(process.env.SUPPORTS_LOCAL_API
-      ? [{
-          path: '/trending',
-          name: 'trending',
-          meta: {
-            title: 'Trending'
-          },
-          component: Trending
-        }]
-      : []),
+    {
+      // Trending 現在在 Web 和 Electron 模式都可用
+      path: '/trending',
+      name: 'trending',
+      meta: {
+        title: 'Trending'
+      },
+      component: Trending
+    },
     {
       path: '/popular',
       name: 'popular',
