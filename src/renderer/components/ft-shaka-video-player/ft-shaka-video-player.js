@@ -2614,6 +2614,34 @@ export default defineComponent({
         videoElement.muted = (muted === 'true')
       }
 
+      // 強制自動播放時，必須設為 muted 才能繞過瀏覽器限制
+      if (forceAutoplay.value) {
+        console.log('[Autoplay] Force autoplay detected in onMounted, setting muted=true')
+        videoElement.muted = true
+        videoElement.autoplay = true
+
+        // 立即嘗試播放（iOS 需要盡早嘗試）
+        const tryImmediatePlay = () => {
+          if (videoElement.paused) {
+            console.log('[Autoplay] Attempting immediate play, readyState:', videoElement.readyState)
+            videoElement.play().then(() => {
+              console.log('[Autoplay] Immediate play succeeded!')
+              setTimeout(() => {
+                videoElement.muted = false
+                console.log('[Autoplay] Unmuted')
+              }, 300)
+            }).catch(err => {
+              console.log('[Autoplay] Immediate play failed:', err.message, '- will retry on events')
+            })
+          }
+        }
+
+        // 多次嘗試，確保能播放
+        setTimeout(tryImmediatePlay, 50)
+        setTimeout(tryImmediatePlay, 200)
+        setTimeout(tryImmediatePlay, 500)
+      }
+
       videoElement.playbackRate = props.currentPlaybackRate
       videoElement.defaultPlaybackRate = props.currentPlaybackRate
 
