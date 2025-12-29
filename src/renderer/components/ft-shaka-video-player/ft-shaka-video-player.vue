@@ -14,8 +14,10 @@
       preload="auto"
       crossorigin="anonymous"
       playsinline
-      :autoplay="autoplayVideos ? true : null"
-      :muted="forceAutoplay"
+      webkit-playsinline
+      x5-playsinline
+      :autoplay="(autoplayVideos || forceAutoplay) ? true : null"
+      :muted="forceAutoplay ? true : null"
       :poster="thumbnail"
       @play="handlePlay"
       @pause="handlePause"
@@ -23,6 +25,7 @@
       @canplay="handleCanPlay"
       @volumechange="updateVolume"
       @timeupdate="handleTimeupdate"
+      @loadeddata="handleLoadedData"
     />
     <!--
       VR playback is only possible for VR videos with "EQUIRECTANGULAR" projection

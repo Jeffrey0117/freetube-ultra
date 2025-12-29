@@ -1191,11 +1191,29 @@ export default defineComponent({
 
       // Mobile autoplay fallback: try to play when canplay fires
       // This is more reliable on mobile than the loaded event
-      if (autoplayVideos.value) {
+      if (autoplayVideos.value || forceAutoplay.value) {
         const video_ = video.value
         if (video_ && video_.paused && video_.readyState >= 3) {
           video_.play().catch(() => {
             // Silent catch - already handled in handleLoaded
+          })
+        }
+      }
+    }
+
+    // iOS Safari 專用：loadeddata 事件比 canplay 更早觸發
+    function handleLoadedData() {
+      if (forceAutoplay.value) {
+        const video_ = video.value
+        if (video_ && video_.paused) {
+          console.log('[iOS Autoplay] Trying to play on loadeddata event')
+          video_.play().then(() => {
+            console.log('[iOS Autoplay] Success! Unmuting...')
+            setTimeout(() => {
+              video_.muted = false
+            }, 200)
+          }).catch(err => {
+            console.log('[iOS Autoplay] Failed on loadeddata:', err.message)
           })
         }
       }
@@ -3207,6 +3225,7 @@ export default defineComponent({
       handlePlay,
       handlePause,
       handleCanPlay,
+      handleLoadedData,
       handleEnded,
       updateVolume,
       handleTimeupdate,
