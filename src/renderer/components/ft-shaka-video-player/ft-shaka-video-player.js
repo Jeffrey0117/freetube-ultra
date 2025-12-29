@@ -1180,6 +1180,17 @@ export default defineComponent({
         startInPip = false
         window.ftElectron.requestPiP()
       }
+
+      // Mobile autoplay fallback: try to play when canplay fires
+      // This is more reliable on mobile than the loaded event
+      if (autoplayVideos.value) {
+        const video_ = video.value
+        if (video_ && video_.paused && video_.readyState >= 3) {
+          video_.play().catch(() => {
+            // Silent catch - already handled in handleLoaded
+          })
+        }
+      }
     }
 
     function updateVolume() {
@@ -2829,12 +2840,30 @@ export default defineComponent({
 
       // Explicitly call play() when autoplay is enabled to handle browser autoplay policies
       // Browsers may block the autoplay attribute even after user interaction
+      // Mobile browsers are especially strict about autoplay
       if (autoplayVideos.value) {
         const video_ = video.value
         if (video_ && video_.paused) {
+          // Try to play - if blocked, try muted playback as fallback
           video_.play().catch(error => {
-            // Autoplay was prevented, this is expected behavior in some browsers
             console.log('[Autoplay] Browser prevented autoplay:', error.message)
+            // Mobile fallback: try playing muted first, then unmute
+            // This often works because muted autoplay is usually allowed
+            const originalMuted = video_.muted
+            video_.muted = true
+            video_.play().then(() => {
+              console.log('[Autoplay] Playing muted as fallback')
+              // Show a toast to let user know they need to unmute
+              // Optionally restore volume after a short delay if user interacts
+              setTimeout(() => {
+                if (!originalMuted) {
+                  video_.muted = false
+                }
+              }, 100)
+            }).catch(err => {
+              console.log('[Autoplay] Even muted autoplay failed:', err.message)
+              video_.muted = originalMuted
+            })
           })
         }
       }
