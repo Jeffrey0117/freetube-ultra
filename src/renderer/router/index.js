@@ -33,7 +33,15 @@ const router = createRouter({
       meta: {
         title: 'Subscriptions'
       },
-      component: Subscriptions
+      component: Subscriptions,
+      // Web 模式下重導向到 Popular (訂閱功能需要本地資料庫)
+      beforeEnter: (to, from, next) => {
+        if (!process.env.SUPPORTS_LOCAL_API) {
+          next({ name: 'popular' })
+        } else {
+          next()
+        }
+      }
     },
     {
       path: '/subscribedchannels',
@@ -41,7 +49,15 @@ const router = createRouter({
       meta: {
         title: 'Channels'
       },
-      component: SubscribedChannels
+      component: SubscribedChannels,
+      // Web 模式下重導向到 Popular
+      beforeEnter: (to, from, next) => {
+        if (!process.env.SUPPORTS_LOCAL_API) {
+          next({ name: 'popular' })
+        } else {
+          next()
+        }
+      }
     },
     {
       // Trending 現在在 Web 和 Electron 模式都可用

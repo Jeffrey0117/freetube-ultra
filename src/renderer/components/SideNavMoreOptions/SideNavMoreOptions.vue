@@ -30,7 +30,9 @@
       v-if="openMoreOptions"
       class="moreOptionContainer"
     >
+      <!-- 訂閱頻道只在 Electron 模式顯示 -->
       <router-link
+        v-if="SUPPORTS_LOCAL_API"
         class="navOption mobileHidden"
         :title="$t('Channels.Channels')"
         :aria-label="hideLabelsSideBar ? $t('Channels.Channels') : null"
@@ -54,8 +56,9 @@
           {{ $t("Channels.Channels") }}
         </p>
       </router-link>
+      <!-- Trending: Web 模式總是顯示 -->
       <router-link
-        v-if=" SUPPORTS_LOCAL_API && trendingVisible"
+        v-if="SUPPORTS_LOCAL_API ? trendingVisible : true"
         class="navOption"
         :title="$t('Trending.Trending')"
         :aria-label="hideLabelsSideBar ? $t('Trending.Trending') : null"
@@ -75,8 +78,9 @@
           {{ $t("Trending.Trending") }}
         </p>
       </router-link>
+      <!-- Popular: Web 模式總是顯示 -->
       <router-link
-        v-if="popularVisible"
+        v-if="SUPPORTS_LOCAL_API ? popularVisible : true"
         class="navOption"
         :title="$t('Most Popular')"
         :aria-label="hideLabelsSideBar ? $t('Most Popular') : null"

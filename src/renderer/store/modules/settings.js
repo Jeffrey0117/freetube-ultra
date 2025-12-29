@@ -236,7 +236,8 @@ const state = {
   onlyShowLatestFromChannel: false,
   onlyShowLatestFromChannelNumber: 1,
   openDeepLinksInNewWindow: false,
-  playNextVideo: false,
+  // Web 模式預設開啟連續播放
+  playNextVideo: !process.env.SUPPORTS_LOCAL_API,
   proxyHostname: '127.0.0.1',
   proxyPort: '9050',
   proxyUsername: '',

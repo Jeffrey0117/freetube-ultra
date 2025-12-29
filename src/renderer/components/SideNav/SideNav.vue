@@ -8,7 +8,9 @@
       class="inner"
       :class="applyHiddenLabels"
     >
+      <!-- 訂閱相關功能只在 Electron 模式下顯示 (需要本地資料庫) -->
       <router-link
+        v-if="SUPPORTS_LOCAL_API"
         class="navOption topNavOption mobileShow "
         role="button"
         to="/subscriptions"
@@ -31,6 +33,7 @@
         </p>
       </router-link>
       <router-link
+        v-if="SUPPORTS_LOCAL_API"
         class="navOption mobileHidden"
         role="button"
         to="/subscribedchannels"
@@ -52,8 +55,9 @@
           {{ $t("Channels.Channels") }}
         </p>
       </router-link>
+      <!-- Trending: 在 Electron 模式使用本地 API，在 Web 模式總是顯示 -->
       <router-link
-        v-if="SUPPORTS_LOCAL_API && !hideTrendingVideos && (backendFallback || backendPreference === 'local')"
+        v-if="!hideTrendingVideos && (SUPPORTS_LOCAL_API ? (backendFallback || backendPreference === 'local') : true)"
         class="navOption mobileHidden"
         role="button"
         to="/trending"
@@ -75,8 +79,9 @@
           {{ $t("Trending.Trending") }}
         </p>
       </router-link>
+      <!-- Popular: 在 Web 模式總是顯示 -->
       <router-link
-        v-if="!hidePopularVideos && (backendFallback || backendPreference === 'invidious')"
+        v-if="!hidePopularVideos && (SUPPORTS_LOCAL_API ? (backendFallback || backendPreference === 'invidious') : true)"
         class="navOption mobileHidden"
         role="button"
         to="/popular"
@@ -190,8 +195,9 @@
         </p>
       </router-link>
       <hr>
+      <!-- 訂閱頻道列表只在 Electron 模式顯示 -->
       <div
-        v-if="!hideActiveSubscriptions"
+        v-if="SUPPORTS_LOCAL_API && !hideActiveSubscriptions"
         class="mobileHidden"
       >
         <router-link
