@@ -2826,6 +2826,18 @@ export default defineComponent({
         startInFullscreen = false
         window.ftElectron.requestFullscreen()
       }
+
+      // Explicitly call play() when autoplay is enabled to handle browser autoplay policies
+      // Browsers may block the autoplay attribute even after user interaction
+      if (autoplayVideos.value) {
+        const video_ = video.value
+        if (video_ && video_.paused) {
+          video_.play().catch(error => {
+            // Autoplay was prevented, this is expected behavior in some browsers
+            console.log('[Autoplay] Browser prevented autoplay:', error.message)
+          })
+        }
+      }
     }
 
     watch(

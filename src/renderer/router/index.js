@@ -14,6 +14,7 @@ import Channel from '../views/Channel/Channel.vue'
 import Watch from '../views/Watch/Watch.vue'
 import Hashtag from '../views/Hashtag/Hashtag.vue'
 import Post from '../views/Post.vue'
+import MusicPlayer from '../components/MusicPlayer/MusicPlayer.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -157,6 +158,31 @@ const router = createRouter({
         title: 'Post',
       },
       component: Post
+    },
+    // Music Mode Routes
+    {
+      path: '/music',
+      name: 'musicHome',
+      meta: {
+        title: 'Music'
+      },
+      component: Popular // 暫時使用 Popular，之後可換成專門的音樂首頁
+    },
+    {
+      path: '/music/play/:id',
+      name: 'musicPlay',
+      meta: {
+        title: 'Now Playing'
+      },
+      component: MusicPlayer
+    },
+    {
+      path: '/music/channel/:id',
+      name: 'musicChannel',
+      meta: {
+        title: 'Artist'
+      },
+      component: Channel // 暫時使用 Channel，可加上音樂模式專用 UI
     }
   ],
   scrollBehavior(to, from, savedPosition) {
