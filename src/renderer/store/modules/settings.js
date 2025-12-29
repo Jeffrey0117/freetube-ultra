@@ -230,7 +230,7 @@ const state = {
   hideLabelsSideBar: false,
   hideChapters: false,
   showDistractionFreeTitles: false,
-  landingPage: 'subscriptions',
+  landingPage: process.env.SUPPORTS_LOCAL_API ? 'subscriptions' : 'popular',
   listType: 'grid',
   maxVideoPlaybackRate: 3,
   onlyShowLatestFromChannel: false,
