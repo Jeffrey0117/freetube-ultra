@@ -1183,10 +1183,26 @@ const server = http.createServer(async (req, res) => {
     // 熱門影片 (trending 和 popular 都返回相同內容)
     if (path === '/api/v1/trending' || path === '/api/v1/trending/' ||
         path === '/api/v1/popular' || path === '/api/v1/popular/') {
-      const trending = await innertube.getTrending()
-      const converted = convertSearchResults(trending.videos || [])
-      res.writeHead(200)
-      res.end(JSON.stringify(converted))
+      try {
+        // 嘗試使用 getTrending
+        const trending = await innertube.getTrending()
+        const converted = convertSearchResults(trending.videos || [])
+        res.writeHead(200)
+        res.end(JSON.stringify(converted))
+      } catch (trendingError) {
+        console.log('  [TRENDING] getTrending failed, using search fallback')
+        // Fallback: 搜尋熱門關鍵字
+        try {
+          const searchResults = await innertube.search('music video 2024', { sort_by: 'view_count' })
+          const converted = convertSearchResults(searchResults.results || [])
+          res.writeHead(200)
+          res.end(JSON.stringify(converted))
+        } catch (searchError) {
+          console.error('  [TRENDING] Search fallback also failed:', searchError.message)
+          res.writeHead(500)
+          res.end(JSON.stringify({ error: 'Unable to fetch trending videos' }))
+        }
+      }
       return
     }
 
