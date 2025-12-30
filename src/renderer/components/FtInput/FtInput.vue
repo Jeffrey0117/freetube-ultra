@@ -54,6 +54,7 @@
         :disabled="disabled"
         :spellcheck="false"
         :aria-label="showLabel ? null : placeholder"
+        autocomplete="off"
         @input="handleInput"
         @focus="handleFocus"
         @blur="handleInputBlur"
