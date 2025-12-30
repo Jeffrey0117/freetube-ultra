@@ -19,7 +19,7 @@
     <!-- Album Art -->
     <div class="album-art-container">
       <img
-        v-if="currentTrack && !isLoading"
+        v-if="currentTrack && !isLoading && !thumbnailFailed"
         :src="thumbnailUrl"
         :alt="currentTrack.title"
         class="album-art"
@@ -31,11 +31,6 @@
       </div>
       <div v-else class="album-art-placeholder">
         <FontAwesomeIcon :icon="['fas', 'music']" />
-      </div>
-      <!-- Error Message -->
-      <div v-if="errorMessage" class="error-overlay">
-        <FontAwesomeIcon :icon="['fas', 'exclamation-circle']" />
-        <span>{{ errorMessage }}</span>
       </div>
     </div>
 
@@ -231,10 +226,10 @@ const relatedVideos = ref([])
 const isLoading = ref(false)
 const audioUrl = ref('')
 const shouldAutoPlay = ref(false)
-const errorMessage = ref('')
 const dragOverIndex = ref(-1)
 const dragStartIndex = ref(-1)
 const thumbnailFallbackLevel = ref(0) // 0=maxresdefault, 1=sddefault, 2=hqdefault, 3=mqdefault
+const thumbnailFailed = ref(false)
 
 // Store getters
 const currentTrack = computed(() => store.getters.getCurrentTrack)
@@ -401,15 +396,14 @@ function getThumbUrl(track) {
   return `https://i.ytimg.com/vi/${track.videoId}/mqdefault.jpg`
 }
 
-function onThumbnailError(event) {
+function onThumbnailError() {
   // Try next quality level if current one fails
   if (thumbnailFallbackLevel.value < thumbnailQualities.length - 1) {
     console.log('[MusicPlayer] Thumbnail failed to load, trying next quality:', thumbnailQualities[thumbnailFallbackLevel.value + 1])
     thumbnailFallbackLevel.value++
   } else {
-    console.log('[MusicPlayer] All thumbnail qualities failed')
-    // Hide the broken image by setting src to empty
-    event.target.style.display = 'none'
+    console.log('[MusicPlayer] All thumbnail qualities failed, showing placeholder')
+    thumbnailFailed.value = true
   }
 }
 
@@ -446,7 +440,7 @@ function onLoadedMetadata() {
 
 function onEnded() {
   console.log('[MusicPlayer] onEnded fired')
-  store.dispatch('playNext')
+  playNextFromRelated()
 }
 
 function onPlay() {
@@ -459,7 +453,7 @@ function onPause() {
   store.dispatch('setPlaying', false)
 }
 
-function onError(event) {
+function onError() {
   const audio = audioElement.value
   const error = audio?.error
   console.error('[MusicPlayer] onError fired:', {
@@ -469,15 +463,11 @@ function onError(event) {
     networkState: audio?.networkState,
     readyState: audio?.readyState
   })
-  // Error codes: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
-  if (error) {
-    const errorMessages = {
-      1: 'Media loading aborted',
-      2: 'Network error',
-      3: 'Decode error',
-      4: 'Source not supported'
-    }
-    errorMessage.value = errorMessages[error.code] || 'Unknown audio error'
+  // 音樂模式下不顯示錯誤訊息，嘗試播放下一首
+  if (error && error.code === 4) {
+    console.log('[MusicPlayer] Source not supported, trying next track')
+    // 自動播放下一首
+    playNextFromRelated()
   }
 }
 
@@ -499,6 +489,46 @@ function onStalled() {
   console.log('[MusicPlayer] onStalled fired - download stalled')
 }
 
+// 從相關影片播放下一首
+async function playNextFromRelated() {
+  console.log('[MusicPlayer] playNextFromRelated called, relatedVideos:', relatedVideos.value.length)
+
+  // 先嘗試從 queue 中播放下一首
+  const nextTrack = store.getters.getNextTrack
+  if (nextTrack) {
+    console.log('[MusicPlayer] Playing next from queue:', nextTrack.title)
+    store.dispatch('playNext')
+    return
+  }
+
+  // 如果 queue 沒有下一首，從 relatedVideos 中選擇
+  if (relatedVideos.value.length > 0) {
+    // 過濾掉已經在 queue 中的影片
+    const queueIds = queue.value.map(t => t.videoId)
+    const availableVideos = relatedVideos.value.filter(v => !queueIds.includes(v.videoId))
+
+    if (availableVideos.length > 0) {
+      const nextVideo = availableVideos[0]
+      console.log('[MusicPlayer] Playing from related videos:', nextVideo.title)
+
+      const track = {
+        videoId: nextVideo.videoId,
+        title: nextVideo.title,
+        author: nextVideo.author,
+        authorId: nextVideo.authorId,
+        lengthSeconds: nextVideo.lengthSeconds
+      }
+
+      // 加入 queue 並播放
+      store.dispatch('addToQueue', track)
+      store.dispatch('playNext')
+      return
+    }
+  }
+
+  console.log('[MusicPlayer] No more tracks to play')
+}
+
 // 獲取音訊串流
 async function fetchAudio(videoId) {
   console.log('[MusicPlayer] fetchAudio called with videoId:', videoId)
@@ -509,7 +539,6 @@ async function fetchAudio(videoId) {
   }
 
   isLoading.value = true
-  errorMessage.value = ''
   audioUrl.value = ''
 
   try {
@@ -522,8 +551,8 @@ async function fetchAudio(videoId) {
     })
 
     if (!result) {
-      console.log('[MusicPlayer] fetchAudio: No result, setting error')
-      errorMessage.value = 'Failed to load audio'
+      console.log('[MusicPlayer] fetchAudio: No result, trying next track')
+      playNextFromRelated()
       return
     }
 
@@ -557,7 +586,8 @@ async function fetchAudio(videoId) {
     }
   } catch (error) {
     console.error('[MusicPlayer] Error fetching audio:', error)
-    errorMessage.value = 'Error loading audio'
+    // 錯誤時嘗試播放下一首
+    playNextFromRelated()
   } finally {
     isLoading.value = false
     console.log('[MusicPlayer] fetchAudio: Finished, isLoading:', isLoading.value)
@@ -589,8 +619,9 @@ watch(currentTrack, (newTrack, oldTrack) => {
     newTrackHasAudioUrl: !!newTrack?.audioUrl
   })
   if (newTrack && newTrack.videoId !== oldTrack?.videoId) {
-    // Reset thumbnail fallback level for new track
+    // Reset thumbnail fallback level and failed state for new track
     thumbnailFallbackLevel.value = 0
+    thumbnailFailed.value = false
     // 如果 track 已經有 audioUrl，直接播放
     if (newTrack.audioUrl) {
       console.log('[MusicPlayer] Track has audioUrl, setting directly:', newTrack.audioUrl.substring(0, 100) + '...')
@@ -712,21 +743,6 @@ onMounted(() => {
 
 .album-art-container {
   position: relative;
-}
-
-.error-overlay {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 0, 0, 0.9);
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
 }
 
 /* Track Info */
