@@ -189,6 +189,23 @@ function closeMiniPlayer() {
 
 .mini-btn.play-btn {
   font-size: 22px;
+  background: #fff;
+  color: #000;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+}
+
+.mini-btn.play-btn:hover {
+  background: #f0f0f0;
+}
+
+.mini-btn.play-btn svg {
+  color: #000;
 }
 
 .mini-btn.close-btn {

@@ -900,7 +900,7 @@ onMounted(() => {
   color: #ff0000;
 }
 
-.play-btn {
+.control-btn.play-btn {
   background: #fff;
   color: #000;
   border-radius: 50%;
@@ -915,16 +915,17 @@ onMounted(() => {
 }
 
 /* Play icon needs slight offset to appear centered */
-.play-btn svg {
+.control-btn.play-btn svg {
   display: block;
+  color: #000;
 }
 
-.play-btn:hover {
+.control-btn.play-btn:hover {
   transform: scale(1.1);
   background: #f0f0f0;
 }
 
-.play-btn:active {
+.control-btn.play-btn:active {
   transform: scale(1.05);
   background: #e0e0e0;
 }
