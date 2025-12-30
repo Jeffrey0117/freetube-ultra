@@ -603,6 +603,9 @@ function onStalled() {
 }
 
 // 獲取音訊串流
+// 用於追蹤當前請求，防止 race condition
+let currentFetchId = 0
+
 async function fetchAudio(videoId) {
   console.log('[MusicPlayer] fetchAudio called with videoId:', videoId)
 
@@ -611,12 +614,23 @@ async function fetchAudio(videoId) {
     return
   }
 
+  // 遞增 fetchId，用於檢測 stale 請求
+  const fetchId = ++currentFetchId
+  console.log('[MusicPlayer] fetchAudio: fetchId:', fetchId)
+
   isLoading.value = true
   audioUrl.value = ''
 
   try {
     console.log('[MusicPlayer] fetchAudio: Calling getAudioStreamUrl...')
     const result = await getAudioStreamUrl(videoId)
+
+    // 檢查這個請求是否已經過期（有更新的請求）
+    if (fetchId !== currentFetchId) {
+      console.log('[MusicPlayer] fetchAudio: Stale request detected, discarding result. fetchId:', fetchId, 'currentFetchId:', currentFetchId)
+      return
+    }
+
     console.log('[MusicPlayer] fetchAudio: getAudioStreamUrl result:', {
       hasResult: !!result,
       audioUrl: result?.audioUrl ? result.audioUrl.substring(0, 100) + '...' : null,
@@ -625,6 +639,12 @@ async function fetchAudio(videoId) {
 
     if (!result) {
       console.log('[MusicPlayer] fetchAudio: No result from API')
+      return
+    }
+
+    // 再次檢查 currentTrack 是否匹配，確保 audio 和 title 同步
+    if (currentTrack.value && currentTrack.value.videoId !== videoId) {
+      console.log('[MusicPlayer] fetchAudio: currentTrack changed during fetch, discarding. Expected:', videoId, 'Got:', currentTrack.value.videoId)
       return
     }
 
