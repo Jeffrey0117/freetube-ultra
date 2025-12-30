@@ -1,39 +1,26 @@
 /**
  * Lyrics API Helper
- * Uses local API proxy to fetch lyrics from mojigeci.com (避免 CORS 問題)
+ * Uses LRCLIB.net - Free synced lyrics API (no auth required)
  */
 
-// 使用相對路徑，會自動使用當前 API server (支援 Cloudflare Tunnel)
-const LYRICS_API_BASE = '/api/v1/lyrics'
+const LRCLIB_API = 'https://lrclib.net/api'
 
 /**
- * Search for songs by keyword (artist + song name)
- * @param {string} keyword - Search keyword (e.g., "song name artist")
- * @param {number} page - Page number (default: 1)
- * @param {number} pageSize - Results per page (default: 12)
- * @returns {Promise<Array>} - Array of song results
+ * Search for lyrics on LRCLIB
+ * @param {string} track - Track name
+ * @param {string} artist - Artist name
+ * @returns {Promise<Array>} - Array of results
  */
-export async function searchLyrics(keyword, page = 1, pageSize = 12) {
+export async function searchLyrics(track, artist = '') {
   try {
-    const params = new URLSearchParams({
-      keyword,
-      page: page.toString(),
-      pageSize: pageSize.toString()
-    })
-
-    const response = await fetch(`${LYRICS_API_BASE}/search?${params}`)
+    const query = artist ? `${track} ${artist}` : track
+    const response = await fetch(`${LRCLIB_API}/search?q=${encodeURIComponent(query)}`)
 
     if (!response.ok) {
-      throw new Error(`Lyrics search failed: ${response.status}`)
+      throw new Error(`LRCLIB search failed: ${response.status}`)
     }
 
-    const result = await response.json()
-
-    if (result.code === 200 && result.data?.data) {
-      return result.data.data
-    }
-
-    return []
+    return await response.json()
   } catch (error) {
     console.error('[Lyrics] Search error:', error)
     return []
@@ -41,43 +28,33 @@ export async function searchLyrics(keyword, page = 1, pageSize = 12) {
 }
 
 /**
- * Get lyrics by song ID
- * @param {number|string} id - Song ID from search results
- * @param {string} songName - Song name
- * @param {string} songArtist - Artist name
- * @param {string} songCover - Cover image URL (optional)
- * @param {string} keyword - Original search keyword (optional)
+ * Get lyrics by exact match (preferred method)
+ * @param {string} track - Track name
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name (optional)
+ * @param {number} duration - Duration in seconds (optional)
  * @returns {Promise<Object|null>} - Lyrics data or null
  */
-export async function getLyricsById(id, songName, songArtist, songCover = '', keyword = '') {
+export async function getLyricsByMatch(track, artist, album = '', duration = 0) {
   try {
     const params = new URLSearchParams({
-      id: id.toString(),
-      song_name: songName,
-      song_artist: songArtist,
-      song_cover: songCover,
-      keyword: keyword || songName
+      track_name: track,
+      artist_name: artist
     })
+    if (album) params.append('album_name', album)
+    if (duration) params.append('duration', Math.round(duration).toString())
 
-    const response = await fetch(`${LYRICS_API_BASE}/get?${params}`)
+    const response = await fetch(`${LRCLIB_API}/get?${params}`)
+
+    if (response.status === 404) {
+      return null // Not found
+    }
 
     if (!response.ok) {
-      throw new Error(`Lyrics fetch failed: ${response.status}`)
+      throw new Error(`LRCLIB get failed: ${response.status}`)
     }
 
-    const result = await response.json()
-
-    if (result.code === 200 && result.data?.data?.lyrics) {
-      return {
-        lyrics: result.data.data.lyrics,
-        tlyric: result.data.data.tlyric, // Translated lyrics if available
-        name: result.data.data.name,
-        artist: result.data.data.artist,
-        cover: result.data.data.cover
-      }
-    }
-
-    return null
+    return await response.json()
   } catch (error) {
     console.error('[Lyrics] Fetch error:', error)
     return null
@@ -127,63 +104,75 @@ export function parseLRC(lrcText) {
  * Search and fetch lyrics for a song
  * @param {string} title - Song title
  * @param {string} artist - Artist name
- * @returns {Promise<{parsed: Array, raw: string}|null>} - Parsed and raw lyrics or null
+ * @param {number} duration - Duration in seconds (optional, improves matching)
+ * @returns {Promise<{parsed: Array, raw: string, synced: boolean}|null>} - Parsed and raw lyrics or null
  */
-export async function fetchLyrics(title, artist) {
+export async function fetchLyrics(title, artist, duration = 0) {
   try {
     // Clean up title - remove common suffixes like "(Official Video)", "(Lyrics)", etc.
     const cleanTitle = title
-      .replace(/\s*[\(\[].*(official|video|audio|lyrics|music|mv|hd|4k|visualizer).*[\)\]]/gi, '')
-      .replace(/\s*-\s*(official|video|audio|lyrics).*$/gi, '')
+      .replace(/\s*[\(\[].*(?:official|video|audio|lyrics|music|mv|hd|4k|visualizer|remaster|live).*[\)\]]/gi, '')
+      .replace(/\s*-\s*(?:official|video|audio|lyrics).*$/gi, '')
+      .replace(/\s*\|.*$/gi, '') // Remove everything after |
       .trim()
 
-    // Search with artist + title
-    const keyword = `${cleanTitle} ${artist}`.trim()
-    console.log('[Lyrics] Searching for:', keyword)
+    const cleanArtist = artist
+      .replace(/\s*-\s*Topic$/i, '') // Remove "- Topic" suffix from YouTube Music
+      .replace(/VEVO$/i, '')
+      .trim()
 
-    const searchResults = await searchLyrics(keyword)
+    console.log('[Lyrics] Searching for:', cleanTitle, 'by', cleanArtist)
 
-    if (searchResults.length === 0) {
-      console.log('[Lyrics] No results found, trying title only')
-      // Try with title only
-      const titleOnlyResults = await searchLyrics(cleanTitle)
-      if (titleOnlyResults.length === 0) {
-        return null
+    // Method 1: Try exact match first (best quality)
+    let lyricsData = await getLyricsByMatch(cleanTitle, cleanArtist, '', duration)
+
+    // Method 2: Search if exact match fails
+    if (!lyricsData || !lyricsData.syncedLyrics) {
+      console.log('[Lyrics] Exact match failed, trying search...')
+      const searchResults = await searchLyrics(cleanTitle, cleanArtist)
+
+      if (searchResults.length > 0) {
+        // Find best match with synced lyrics
+        const bestMatch = findBestMatch(searchResults, cleanTitle, cleanArtist, duration)
+        if (bestMatch) {
+          lyricsData = bestMatch
+        }
       }
-      searchResults.push(...titleOnlyResults)
     }
 
-    // Find best match
-    const bestMatch = findBestMatch(searchResults, cleanTitle, artist)
+    // Method 3: Try title only
+    if (!lyricsData || !lyricsData.syncedLyrics) {
+      console.log('[Lyrics] Trying title only search...')
+      const titleOnlyResults = await searchLyrics(cleanTitle)
+      if (titleOnlyResults.length > 0) {
+        const bestMatch = findBestMatch(titleOnlyResults, cleanTitle, cleanArtist, duration)
+        if (bestMatch) {
+          lyricsData = bestMatch
+        }
+      }
+    }
 
-    if (!bestMatch) {
-      console.log('[Lyrics] No suitable match found')
+    if (!lyricsData) {
+      console.log('[Lyrics] No lyrics found')
       return null
     }
 
-    console.log('[Lyrics] Best match:', bestMatch.name, 'by', bestMatch.artist)
-
-    // Fetch lyrics using the best match
-    const lyricsData = await getLyricsById(
-      bestMatch.id,
-      bestMatch.name,
-      Array.isArray(bestMatch.artist) ? bestMatch.artist.join(', ') : bestMatch.artist,
-      bestMatch.cover,
-      keyword
-    )
-
-    if (!lyricsData || !lyricsData.lyrics) {
+    // Prefer synced lyrics, fall back to plain lyrics
+    const lrcText = lyricsData.syncedLyrics || lyricsData.plainLyrics
+    if (!lrcText) {
       return null
     }
+
+    console.log('[Lyrics] Found:', lyricsData.trackName, 'by', lyricsData.artistName)
 
     return {
-      parsed: parseLRC(lyricsData.lyrics),
-      raw: lyricsData.lyrics,
-      tlyric: lyricsData.tlyric,
+      parsed: lyricsData.syncedLyrics ? parseLRC(lyricsData.syncedLyrics) : [],
+      raw: lrcText,
+      synced: !!lyricsData.syncedLyrics,
       source: {
-        name: lyricsData.name,
-        artist: lyricsData.artist,
-        cover: lyricsData.cover
+        name: lyricsData.trackName,
+        artist: lyricsData.artistName,
+        album: lyricsData.albumName
       }
     }
   } catch (error) {
@@ -193,25 +182,28 @@ export async function fetchLyrics(title, artist) {
 }
 
 /**
- * Find the best matching song from search results
- * @param {Array} results - Search results
+ * Find the best matching song from LRCLIB search results
+ * @param {Array} results - Search results from LRCLIB
  * @param {string} title - Target song title
  * @param {string} artist - Target artist name
- * @returns {Object|null} - Best matching result or null
+ * @param {number} duration - Target duration in seconds
+ * @returns {Object|null} - Best matching result with syncedLyrics, or null
  */
-function findBestMatch(results, title, artist) {
-  if (results.length === 0) return null
+function findBestMatch(results, title, artist, duration = 0) {
+  // Filter to only results with synced lyrics
+  const withSynced = results.filter(r => r.syncedLyrics)
+  const candidates = withSynced.length > 0 ? withSynced : results
+
+  if (candidates.length === 0) return null
 
   const normalizedTitle = title.toLowerCase()
   const normalizedArtist = artist.toLowerCase()
 
   // Score each result
-  const scored = results.map(result => {
+  const scored = candidates.map(result => {
     let score = 0
-    const resultName = result.name.toLowerCase()
-    const resultArtists = Array.isArray(result.artist)
-      ? result.artist.map(a => a.toLowerCase())
-      : [result.artist.toLowerCase()]
+    const resultName = (result.trackName || '').toLowerCase()
+    const resultArtist = (result.artistName || '').toLowerCase()
 
     // Title matching
     if (resultName === normalizedTitle) {
@@ -221,19 +213,27 @@ function findBestMatch(results, title, artist) {
     }
 
     // Artist matching
-    for (const resultArtist of resultArtists) {
-      if (resultArtist === normalizedArtist) {
-        score += 100
-      } else if (resultArtist.includes(normalizedArtist) || normalizedArtist.includes(resultArtist)) {
+    if (resultArtist === normalizedArtist) {
+      score += 100
+    } else if (resultArtist.includes(normalizedArtist) || normalizedArtist.includes(resultArtist)) {
+      score += 50
+    }
+
+    // Duration matching (within 5 seconds is good)
+    if (duration > 0 && result.duration) {
+      const durationDiff = Math.abs(result.duration - duration)
+      if (durationDiff <= 2) {
         score += 50
+      } else if (durationDiff <= 5) {
+        score += 30
+      } else if (durationDiff <= 10) {
+        score += 10
       }
     }
 
-    // Penalize covers/remixes unless original is a cover/remix
-    if (resultName.includes('cover') || resultName.includes('remix') || resultName.includes('原唱')) {
-      if (!normalizedTitle.includes('cover') && !normalizedTitle.includes('remix')) {
-        score -= 30
-      }
+    // Bonus for having synced lyrics
+    if (result.syncedLyrics) {
+      score += 20
     }
 
     return { result, score }
@@ -243,12 +243,12 @@ function findBestMatch(results, title, artist) {
   scored.sort((a, b) => b.score - a.score)
 
   // Return best match if it has a reasonable score
-  if (scored[0].score >= 50) {
+  if (scored[0].score >= 30) {
     return scored[0].result
   }
 
-  // Otherwise return first result as fallback
-  return results[0]
+  // Otherwise return first result with synced lyrics as fallback
+  return withSynced[0] || candidates[0]
 }
 
 /**
