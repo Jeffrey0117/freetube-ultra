@@ -125,6 +125,19 @@
         {{ $t('Video.Player.Skipped segment', { segmentCategory: translatedCategory }) }}
       </p>
     </div>
+    <!-- iOS 自動播放失敗時顯示的點擊播放按鈕 -->
+    <Transition name="fade">
+      <div
+        v-if="showTapToPlay"
+        class="tapToPlayOverlay"
+        @click="handleTapToPlay"
+      >
+        <div class="tapToPlayButton">
+          <font-awesome-icon :icon="['fas', 'play']" class="tapToPlayIcon" />
+          <span class="tapToPlayText">Tap to Play</span>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 

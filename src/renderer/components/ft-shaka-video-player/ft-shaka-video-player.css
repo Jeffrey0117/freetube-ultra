@@ -257,4 +257,42 @@
   }
 }
 
+/* Tap to Play overlay for iOS autoplay fallback */
+.tapToPlayOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(0 0 0 / 60%);
+  z-index: 100;
+  cursor: pointer;
+}
+
+.tapToPlayButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 48px;
+  background-color: rgb(255 255 255 / 20%);
+  border-radius: 16px;
+  transition: background-color 0.2s;
+}
+
+.tapToPlayButton:hover {
+  background-color: rgb(255 255 255 / 30%);
+}
+
+.tapToPlayIcon {
+  font-size: 48px;
+  color: #fff;
+}
+
+.tapToPlayText {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
 /* stylelint-enable liberty/use-logical-spec */

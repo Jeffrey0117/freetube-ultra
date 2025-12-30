@@ -185,6 +185,7 @@ export default defineComponent({
     const vrCanvas = ref(null)
 
     const hasLoaded = ref(false)
+    const showTapToPlay = ref(false)
 
     const hasMultipleAudioTracks = ref(false)
     const isLive = ref(false)
@@ -1216,6 +1217,21 @@ export default defineComponent({
             console.log('[iOS Autoplay] Failed on loadeddata:', err.message)
           })
         }
+      }
+    }
+
+    // 用戶點擊「Tap to Play」按鈕時觸發
+    function handleTapToPlay() {
+      const video_ = video.value
+      if (video_) {
+        console.log('[TapToPlay] User tapped, attempting to play...')
+        video_.muted = false
+        video_.play().then(() => {
+          console.log('[TapToPlay] Play succeeded!')
+          showTapToPlay.value = false
+        }).catch(err => {
+          console.log('[TapToPlay] Play failed:', err.message)
+        })
       }
     }
 
@@ -2640,6 +2656,14 @@ export default defineComponent({
         setTimeout(tryImmediatePlay, 50)
         setTimeout(tryImmediatePlay, 200)
         setTimeout(tryImmediatePlay, 500)
+
+        // 1秒後如果還是沒播放，顯示「Tap to Play」按鈕
+        setTimeout(() => {
+          if (videoElement.paused && forceAutoplay.value) {
+            console.log('[Autoplay] All attempts failed, showing Tap to Play button')
+            showTapToPlay.value = true
+          }
+        }, 1000)
       }
 
       videoElement.playbackRate = props.currentPlaybackRate
@@ -3254,6 +3278,8 @@ export default defineComponent({
       handlePause,
       handleCanPlay,
       handleLoadedData,
+      handleTapToPlay,
+      showTapToPlay,
       handleEnded,
       updateVolume,
       handleTimeupdate,
