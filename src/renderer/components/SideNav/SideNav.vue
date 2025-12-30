@@ -103,6 +103,29 @@
           {{ $t("Most Popular") }}
         </p>
       </router-link>
+      <!-- Music Mode -->
+      <router-link
+        class="navOption mobileShow"
+        role="button"
+        to="/music"
+        :title="$t('Music.Home')"
+      >
+        <div
+          class="thumbnailContainer"
+        >
+          <FontAwesomeIcon
+            :icon="['fas', 'music']"
+            class="navIcon"
+            :class="applyNavIconExpand"
+          />
+        </div>
+        <p
+          v-if="!hideText"
+          class="navLabel"
+        >
+          Music
+        </p>
+      </router-link>
       <router-link
         v-if="!hidePlaylists"
         class="navOption mobileShow"
