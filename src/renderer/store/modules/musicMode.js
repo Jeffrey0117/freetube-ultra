@@ -3,6 +3,9 @@
  * 管理音樂模式的狀態
  */
 
+// Maximum number of cached audio URLs
+const MAX_AUDIO_URL_CACHE_SIZE = 10
+
 const state = {
   isMusicMode: false,
   currentTrack: null,
@@ -12,7 +15,12 @@ const state = {
   repeatMode: 'none', // 'none' | 'one' | 'all'
   isPlaying: false,
   currentTime: 0,
-  duration: 0
+  duration: 0,
+  volume: 1.0,
+  // Audio URL cache: { videoId: { url, timestamp } }
+  audioUrlCache: {},
+  // Track insertion order for LRU eviction (oldest first)
+  audioUrlCacheOrder: []
 }
 
 const getters = {
@@ -25,6 +33,7 @@ const getters = {
   getIsPlaying: (state) => state.isPlaying,
   getCurrentTime: (state) => state.currentTime,
   getDuration: (state) => state.duration,
+  getVolume: (state) => state.volume,
   getNextTrack: (state) => {
     if (state.queue.length === 0) return null
     const nextIndex = state.queueIndex + 1
@@ -41,7 +50,16 @@ const getters = {
     }
     return state.queue[prevIndex]
   },
-  hasQueue: (state) => state.queue.length > 0
+  hasQueue: (state) => state.queue.length > 0,
+  // Get cached audio URL for a videoId (returns url or null)
+  getCachedAudioUrl: (state) => (videoId) => {
+    const cached = state.audioUrlCache[videoId]
+    return cached ? cached.url : null
+  },
+  // Check if a videoId has a cached audio URL
+  hasAudioUrlCache: (state) => (videoId) => {
+    return !!state.audioUrlCache[videoId]
+  }
 }
 
 const actions = {
@@ -55,6 +73,22 @@ const actions = {
     const saved = localStorage.getItem('musicMode')
     if (saved === 'true') {
       commit('SET_MUSIC_MODE', true)
+    }
+
+    // Load saved playback settings from localStorage (use LOAD_ mutations to avoid re-writing)
+    const savedVolume = localStorage.getItem('musicMode.volume')
+    if (savedVolume !== null) {
+      commit('LOAD_VOLUME', parseFloat(savedVolume))
+    }
+
+    const savedRepeatMode = localStorage.getItem('musicMode.repeatMode')
+    if (savedRepeatMode !== null) {
+      commit('LOAD_REPEAT_MODE', savedRepeatMode)
+    }
+
+    const savedShuffle = localStorage.getItem('musicMode.shuffle')
+    if (savedShuffle !== null) {
+      commit('LOAD_SHUFFLE', savedShuffle === 'true')
     }
   },
 
@@ -199,6 +233,10 @@ const actions = {
 
   setPlaying({ commit }, isPlaying) {
     commit('SET_PLAYING', isPlaying)
+  },
+
+  setVolume({ commit }, volume) {
+    commit('SET_VOLUME', volume)
   }
 }
 
@@ -237,9 +275,21 @@ const mutations = {
 
   SET_SHUFFLE(state, value) {
     state.shuffleEnabled = value
+    localStorage.setItem('musicMode.shuffle', value.toString())
+  },
+
+  // Load shuffle from localStorage without re-writing
+  LOAD_SHUFFLE(state, value) {
+    state.shuffleEnabled = value
   },
 
   SET_REPEAT_MODE(state, mode) {
+    state.repeatMode = mode
+    localStorage.setItem('musicMode.repeatMode', mode)
+  },
+
+  // Load repeat mode from localStorage without re-writing
+  LOAD_REPEAT_MODE(state, mode) {
     state.repeatMode = mode
   },
 
@@ -253,6 +303,60 @@ const mutations = {
 
   SET_DURATION(state, duration) {
     state.duration = duration
+  },
+
+  SET_VOLUME(state, volume) {
+    state.volume = volume
+    localStorage.setItem('musicMode.volume', volume.toString())
+  },
+
+  // Load volume from localStorage without re-writing
+  LOAD_VOLUME(state, volume) {
+    state.volume = volume
+  },
+
+  // Cache an audio URL for a videoId
+  SET_AUDIO_URL_CACHE(state, { videoId, url }) {
+    // If already cached, update and move to end of order
+    if (state.audioUrlCache[videoId]) {
+      state.audioUrlCache[videoId] = { url, timestamp: Date.now() }
+      const idx = state.audioUrlCacheOrder.indexOf(videoId)
+      if (idx > -1) {
+        state.audioUrlCacheOrder.splice(idx, 1)
+      }
+      state.audioUrlCacheOrder.push(videoId)
+      return
+    }
+
+    // If cache is full, remove oldest entry
+    if (state.audioUrlCacheOrder.length >= MAX_AUDIO_URL_CACHE_SIZE) {
+      const oldestId = state.audioUrlCacheOrder.shift()
+      delete state.audioUrlCache[oldestId]
+      console.log('[MusicMode] Cache full, evicted oldest:', oldestId)
+    }
+
+    // Add new entry
+    state.audioUrlCache[videoId] = { url, timestamp: Date.now() }
+    state.audioUrlCacheOrder.push(videoId)
+    console.log('[MusicMode] Cached audio URL for:', videoId, 'Cache size:', state.audioUrlCacheOrder.length)
+  },
+
+  // Clear a specific entry from cache
+  CLEAR_AUDIO_URL_CACHE_ENTRY(state, videoId) {
+    if (state.audioUrlCache[videoId]) {
+      delete state.audioUrlCache[videoId]
+      const idx = state.audioUrlCacheOrder.indexOf(videoId)
+      if (idx > -1) {
+        state.audioUrlCacheOrder.splice(idx, 1)
+      }
+    }
+  },
+
+  // Clear all cached audio URLs
+  CLEAR_AUDIO_URL_CACHE(state) {
+    state.audioUrlCache = {}
+    state.audioUrlCacheOrder = []
+    console.log('[MusicMode] Audio URL cache cleared')
   }
 }
 

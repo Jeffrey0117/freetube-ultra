@@ -250,6 +250,11 @@ const dragStartIndex = ref(-1)
 const thumbnailFallbackLevel = ref(0) // 0=maxresdefault, 1=sddefault, 2=hqdefault, 3=mqdefault
 const thumbnailFailed = ref(false)
 
+// Preload state - track which video we've already triggered preload for
+const preloadTriggeredFor = ref(null)
+// Track if preload is in progress
+const isPreloading = ref(false)
+
 // Lyrics state
 const lyricsContainer = ref(null)
 const parsedLyrics = ref([])
@@ -266,6 +271,7 @@ const repeatMode = computed(() => store.getters.getRepeatMode)
 const isPlaying = computed(() => store.getters.getIsPlaying)
 const currentTime = computed(() => store.getters.getCurrentTime)
 const duration = computed(() => store.getters.getDuration)
+const volume = computed(() => store.getters.getVolume)
 
 // Computed
 const thumbnailQualities = ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault']
@@ -508,10 +514,45 @@ function seekToLyric(time) {
   }
 }
 
+// Preload next track's audio URL
+async function preloadNextTrack(videoId) {
+  // Skip if already cached
+  if (store.getters.hasAudioUrlCache(videoId)) {
+    console.log('[MusicPlayer] preloadNextTrack: Already cached:', videoId)
+    return
+  }
+
+  // Skip if already preloading or already triggered for this video
+  if (isPreloading.value || preloadTriggeredFor.value === videoId) {
+    console.log('[MusicPlayer] preloadNextTrack: Skipping, isPreloading:', isPreloading.value, 'preloadTriggeredFor:', preloadTriggeredFor.value)
+    return
+  }
+
+  preloadTriggeredFor.value = videoId
+  isPreloading.value = true
+  console.log('[MusicPlayer] preloadNextTrack: Starting preload for:', videoId)
+
+  try {
+    const result = await getAudioStreamUrl(videoId)
+    if (result && result.audioUrl) {
+      // Cache the audio URL
+      store.commit('SET_AUDIO_URL_CACHE', { videoId, url: result.audioUrl })
+      console.log('[MusicPlayer] preloadNextTrack: Successfully cached audio URL for:', videoId)
+    } else {
+      console.log('[MusicPlayer] preloadNextTrack: No audio URL returned for:', videoId)
+    }
+  } catch (error) {
+    console.error('[MusicPlayer] preloadNextTrack: Error preloading:', error)
+  } finally {
+    isPreloading.value = false
+  }
+}
+
 // Audio event handlers
 function onTimeUpdate() {
   if (audioElement.value) {
     const time = audioElement.value.currentTime
+    const audioDuration = audioElement.value.duration
     store.dispatch('updateCurrentTime', time)
 
     // Update current lyric index
@@ -520,6 +561,14 @@ function onTimeUpdate() {
       if (newIndex !== currentLyricIndex.value) {
         currentLyricIndex.value = newIndex
         scrollToCurrentLyric()
+      }
+    }
+
+    // Preload next track at 80% progress
+    if (audioDuration > 0 && time / audioDuration >= 0.8) {
+      const nextTrack = store.getters.getNextTrack
+      if (nextTrack && preloadTriggeredFor.value !== nextTrack.videoId) {
+        preloadNextTrack(nextTrack.videoId)
       }
     }
   }
@@ -614,6 +663,22 @@ async function fetchAudio(videoId) {
     return
   }
 
+  // Check cache first
+  const cachedUrl = store.getters.getCachedAudioUrl(videoId)
+  if (cachedUrl) {
+    console.log('[MusicPlayer] fetchAudio: Using cached audio URL for:', videoId)
+    audioUrl.value = cachedUrl
+    isLoading.value = false
+
+    // Still need to trigger autoplay
+    if (audioElement.value) {
+      shouldAutoPlay.value = true
+      audioElement.value.load()
+      console.log('[MusicPlayer] fetchAudio: Loaded from cache, waiting for canplay')
+    }
+    return
+  }
+
   // 遞增 fetchId，用於檢測 stale 請求
   const fetchId = ++currentFetchId
   console.log('[MusicPlayer] fetchAudio: fetchId:', fetchId)
@@ -650,6 +715,9 @@ async function fetchAudio(videoId) {
 
     audioUrl.value = result.audioUrl
     console.log('[MusicPlayer] fetchAudio: audioUrl.value set to:', audioUrl.value ? audioUrl.value.substring(0, 100) + '...' : '')
+
+    // Cache the audio URL for future use
+    store.commit('SET_AUDIO_URL_CACHE', { videoId, url: result.audioUrl })
 
     relatedVideos.value = result.videoInfo.recommendedVideos || []
 
@@ -701,6 +769,13 @@ watch(
   { immediate: true }
 )
 
+// Watch for volume changes from store
+watch(volume, (newVolume) => {
+  if (audioElement.value) {
+    audioElement.value.volume = newVolume
+  }
+})
+
 // Watch for track changes (when navigating through queue)
 watch(currentTrack, (newTrack, oldTrack) => {
   console.log('[MusicPlayer] currentTrack watcher triggered:', {
@@ -712,6 +787,9 @@ watch(currentTrack, (newTrack, oldTrack) => {
     // Reset thumbnail fallback level and failed state for new track
     thumbnailFallbackLevel.value = 0
     thumbnailFailed.value = false
+
+    // Reset preload trigger state for new track
+    preloadTriggeredFor.value = null
 
     // Load lyrics for new track
     loadLyrics(newTrack.title, newTrack.author)
@@ -734,6 +812,89 @@ watch(currentTrack, (newTrack, oldTrack) => {
   }
 })
 
+// Keyboard shortcuts handler
+function handleKeyDown(event) {
+  // Only handle shortcuts when on /music routes
+  if (!route.path.startsWith('/music')) {
+    return
+  }
+
+  // Don't handle shortcuts when focus is on input elements
+  const activeElement = document.activeElement
+  const tagName = activeElement?.tagName?.toLowerCase()
+  if (tagName === 'input' || tagName === 'textarea' || activeElement?.isContentEditable) {
+    return
+  }
+
+  const key = event.key.toLowerCase()
+
+  switch (key) {
+    case ' ': // Space: Play/Pause
+      event.preventDefault()
+      togglePlay()
+      break
+
+    case 'arrowleft': // ArrowLeft: Rewind 5 seconds
+      event.preventDefault()
+      if (audioElement.value) {
+        const newTime = Math.max(0, audioElement.value.currentTime - 5)
+        audioElement.value.currentTime = newTime
+        store.dispatch('updateCurrentTime', newTime)
+      }
+      break
+
+    case 'arrowright': // ArrowRight: Fast forward 5 seconds
+      event.preventDefault()
+      if (audioElement.value) {
+        const maxTime = audioElement.value.duration || 0
+        const newTime = Math.min(maxTime, audioElement.value.currentTime + 5)
+        audioElement.value.currentTime = newTime
+        store.dispatch('updateCurrentTime', newTime)
+      }
+      break
+
+    case 'arrowup': // ArrowUp: Volume +10%
+      event.preventDefault()
+      if (audioElement.value) {
+        const newVolume = Math.min(1, audioElement.value.volume + 0.1)
+        audioElement.value.volume = newVolume
+        store.dispatch('setVolume', newVolume)
+      }
+      break
+
+    case 'arrowdown': // ArrowDown: Volume -10%
+      event.preventDefault()
+      if (audioElement.value) {
+        const newVolume = Math.max(0, audioElement.value.volume - 0.1)
+        audioElement.value.volume = newVolume
+        store.dispatch('setVolume', newVolume)
+      }
+      break
+
+    case 'n': // N: Next track
+      event.preventDefault()
+      playNext()
+      break
+
+    case 'p': // P: Previous track
+      event.preventDefault()
+      playPrevious()
+      break
+
+    case 'm': // M: Toggle mute
+      event.preventDefault()
+      if (audioElement.value) {
+        audioElement.value.muted = !audioElement.value.muted
+      }
+      break
+
+    case 'r': // R: Cycle repeat mode
+      event.preventDefault()
+      cycleRepeat()
+      break
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   console.log('[MusicPlayer] onMounted called')
@@ -742,11 +903,25 @@ onMounted(() => {
 
   store.dispatch('initMusicMode')
 
+  // Apply saved volume to audio element
+  if (audioElement.value) {
+    audioElement.value.volume = volume.value
+    console.log('[MusicPlayer] Applied saved volume:', volume.value)
+  }
+
+  // Add keyboard event listener
+  window.addEventListener('keydown', handleKeyDown)
+
   // 如果有 route param，獲取音訊
   if (route.params.id) {
     console.log('[MusicPlayer] onMounted: Calling fetchAudio with route param')
     fetchAudio(route.params.id)
   }
+})
+
+onBeforeUnmount(() => {
+  // Remove keyboard event listener
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
