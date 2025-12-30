@@ -170,8 +170,24 @@
       </div>
 
       <!-- Lyrics Tab -->
-      <div v-if="activeTab === 'lyrics'" class="lyrics-container">
-        <p class="lyrics-placeholder">Lyrics not available</p>
+      <div v-if="activeTab === 'lyrics'" class="lyrics-container" ref="lyricsContainer">
+        <div v-if="lyricsLoading" class="lyrics-loading">
+          <FontAwesomeIcon :icon="['fas', 'spinner']" spin />
+          <span>Loading lyrics...</span>
+        </div>
+        <div v-else-if="parsedLyrics.length > 0" class="lyrics-scroll">
+          <p
+            v-for="(line, index) in parsedLyrics"
+            :key="index"
+            class="lyrics-line"
+            :class="{ active: index === currentLyricIndex, past: index < currentLyricIndex }"
+            :data-index="index"
+            @click="seekToLyric(line.time)"
+          >
+            {{ line.text }}
+          </p>
+        </div>
+        <p v-else class="lyrics-placeholder">Lyrics not available</p>
       </div>
 
       <!-- Related Tab -->
@@ -215,6 +231,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import MusicModeToggle from '../MusicModeToggle/MusicModeToggle.vue'
 import store from '../../store/index'
 import { getAudioStreamUrl, videoToTrack } from '../../helpers/api/music'
+import { fetchLyrics, getCurrentLyricIndex } from '../../helpers/api/lyrics'
 
 const router = useRouter()
 const route = useRoute()
@@ -230,6 +247,13 @@ const dragOverIndex = ref(-1)
 const dragStartIndex = ref(-1)
 const thumbnailFallbackLevel = ref(0) // 0=maxresdefault, 1=sddefault, 2=hqdefault, 3=mqdefault
 const thumbnailFailed = ref(false)
+
+// Lyrics state
+const lyricsContainer = ref(null)
+const parsedLyrics = ref([])
+const rawLyrics = ref('')
+const lyricsLoading = ref(false)
+const currentLyricIndex = ref(-1)
 
 // Store getters
 const currentTrack = computed(() => store.getters.getCurrentTrack)
@@ -421,10 +445,75 @@ function formatCount(count) {
   return count.toString()
 }
 
+// Lyrics functions
+async function loadLyrics(title, artist) {
+  if (!title || !artist) return
+
+  lyricsLoading.value = true
+  parsedLyrics.value = []
+  rawLyrics.value = ''
+  currentLyricIndex.value = -1
+
+  try {
+    console.log('[MusicPlayer] Loading lyrics for:', title, '-', artist)
+    const result = await fetchLyrics(title, artist)
+
+    if (result && result.parsed.length > 0) {
+      parsedLyrics.value = result.parsed
+      rawLyrics.value = result.raw
+      console.log('[MusicPlayer] Lyrics loaded:', result.parsed.length, 'lines')
+    } else {
+      console.log('[MusicPlayer] No lyrics found')
+    }
+  } catch (error) {
+    console.error('[MusicPlayer] Error loading lyrics:', error)
+  } finally {
+    lyricsLoading.value = false
+  }
+}
+
+function scrollToCurrentLyric() {
+  if (currentLyricIndex.value < 0 || !lyricsContainer.value) return
+
+  const container = lyricsContainer.value.querySelector('.lyrics-scroll')
+  if (!container) return
+
+  const activeLine = container.querySelector(`.lyrics-line[data-index="${currentLyricIndex.value}"]`)
+  if (!activeLine) return
+
+  // Scroll to center the active line
+  const containerHeight = container.clientHeight
+  const lineTop = activeLine.offsetTop
+  const lineHeight = activeLine.offsetHeight
+  const scrollTo = lineTop - (containerHeight / 2) + (lineHeight / 2)
+
+  container.scrollTo({
+    top: Math.max(0, scrollTo),
+    behavior: 'smooth'
+  })
+}
+
+function seekToLyric(time) {
+  if (audioElement.value && time >= 0) {
+    audioElement.value.currentTime = time
+    store.dispatch('updateCurrentTime', time)
+  }
+}
+
 // Audio event handlers
 function onTimeUpdate() {
   if (audioElement.value) {
-    store.dispatch('updateCurrentTime', audioElement.value.currentTime)
+    const time = audioElement.value.currentTime
+    store.dispatch('updateCurrentTime', time)
+
+    // Update current lyric index
+    if (parsedLyrics.value.length > 0) {
+      const newIndex = getCurrentLyricIndex(parsedLyrics.value, time)
+      if (newIndex !== currentLyricIndex.value) {
+        currentLyricIndex.value = newIndex
+        scrollToCurrentLyric()
+      }
+    }
   }
 }
 
@@ -595,6 +684,9 @@ watch(currentTrack, (newTrack, oldTrack) => {
     // Reset thumbnail fallback level and failed state for new track
     thumbnailFallbackLevel.value = 0
     thumbnailFailed.value = false
+
+    // Load lyrics for new track
+    loadLyrics(newTrack.title, newTrack.author)
     // 如果 track 已經有 audioUrl，直接播放
     if (newTrack.audioUrl) {
       console.log('[MusicPlayer] Track has audioUrl, setting directly:', newTrack.audioUrl.substring(0, 100) + '...')
@@ -1121,12 +1213,80 @@ onMounted(() => {
 /* Lyrics */
 .lyrics-container {
   text-align: center;
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.lyrics-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  color: #ff0000;
+  font-size: 24px;
+}
+
+.lyrics-loading span {
+  font-size: 14px;
+  color: #aaa;
+}
+
+.lyrics-scroll {
+  flex: 1;
+  overflow-y: auto;
   padding: 40px 20px;
+  scroll-behavior: smooth;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+}
+
+.lyrics-line {
+  font-size: 18px;
+  line-height: 2.2;
+  color: #666;
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.lyrics-line:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #aaa;
+}
+
+.lyrics-line.past {
+  color: #888;
+}
+
+.lyrics-line.active {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
 }
 
 .lyrics-placeholder {
   color: #666;
   font-size: 16px;
+  padding: 40px;
 }
 
 /* Empty State */
