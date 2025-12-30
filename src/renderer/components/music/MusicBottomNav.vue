@@ -54,6 +54,13 @@ export default defineComponent({
   z-index: 100;
 }
 
+/* Hide on mobile - SideNav already provides bottom navigation */
+@media only screen and (max-width: 680px) {
+  .music-bottom-nav {
+    display: none;
+  }
+}
+
 .nav-item {
   display: flex;
   flex-direction: column;

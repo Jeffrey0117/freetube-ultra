@@ -1136,10 +1136,21 @@ onMounted(() => {
   color: #666;
 }
 
-/* Mobile optimizations */
+/* Mobile optimizations - account for fixed TopNav and SideNav bottom bar */
+@media only screen and (max-width: 680px) {
+  .music-player {
+    padding-top: 72px; /* 60px for fixed TopNav + 12px padding */
+    padding-bottom: 72px; /* 60px for fixed SideNav bottom + 12px padding */
+    height: auto; /* Remove fixed height, let content flow */
+    min-height: calc(100vh - 120px); /* TopNav + bottom nav */
+  }
+}
+
 @media (max-width: 480px) {
   .music-player {
     padding: 12px;
+    padding-top: 72px; /* Keep TopNav offset */
+    padding-bottom: 72px; /* Keep bottom nav offset */
   }
 
   .album-art,
