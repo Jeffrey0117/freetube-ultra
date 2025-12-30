@@ -116,21 +116,21 @@
         :class="{ active: activeTab === 'queue' }"
         @click="activeTab = 'queue'"
       >
-        UP NEXT
+        {{ t('Music.Up Next') }}
       </button>
       <button
         class="tab-btn"
         :class="{ active: activeTab === 'lyrics' }"
         @click="activeTab = 'lyrics'"
       >
-        LYRICS
+        {{ t('Music.Lyrics') }}
       </button>
       <button
         class="tab-btn"
         :class="{ active: activeTab === 'related' }"
         @click="activeTab = 'related'"
       >
-        RELATED
+        {{ t('Music.Related') }}
       </button>
     </div>
 
@@ -173,7 +173,7 @@
       <div v-if="activeTab === 'lyrics'" class="lyrics-container" ref="lyricsContainer">
         <div v-if="lyricsLoading" class="lyrics-loading">
           <FontAwesomeIcon :icon="['fas', 'spinner']" spin />
-          <span>Loading lyrics...</span>
+          <span>{{ t('Music.Loading lyrics') }}</span>
         </div>
         <div v-else-if="parsedLyrics.length > 0" class="lyrics-scroll">
           <p
@@ -187,7 +187,7 @@
             {{ line.text }}
           </p>
         </div>
-        <p v-else class="lyrics-placeholder">Lyrics not available</p>
+        <p v-else class="lyrics-placeholder">{{ t('Music.Lyrics not available') }}</p>
       </div>
 
       <!-- Related Tab -->
@@ -230,11 +230,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import MusicModeToggle from '../MusicModeToggle/MusicModeToggle.vue'
 import store from '../../store/index'
+import { useI18n } from '../../composables/use-i18n-polyfill'
 import { getAudioStreamUrl, videoToTrack } from '../../helpers/api/music'
 import { fetchLyrics, getCurrentLyricIndex } from '../../helpers/api/lyrics'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 const audioElement = ref(null)
 const activeTab = ref('queue')
 const showQueue = ref(false)

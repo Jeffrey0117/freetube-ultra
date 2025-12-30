@@ -1127,3 +1127,29 @@ KeyboardShortcutPrompt:
 shortcutLabelSeparator: ｜
 Compact side navigation: 簡潔側邊導航
 Expand side navigation: 展開側邊導航
+
+# 音樂模式
+Music:
+  Quick Picks: 精選推薦
+  Songs: 歌曲
+  Play All: 全部播放
+  Home: 首頁
+  Hot: 熱門
+  Search: 搜尋
+  Library: 媒體庫
+  Trending: 熱門趨勢
+  Chill: 放鬆
+  Workout: 運動
+  Focus: 專注
+  Party: 派對
+  Podcast: Podcast
+  Now Playing: 正在播放
+  Add to Queue: 加入佇列
+  Play Next: 插播下一首
+  Go to Artist: 前往藝人頁面
+  Play in Music Mode: 以音樂模式播放
+  Loading lyrics: 載入歌詞中...
+  Lyrics not available: 暫無歌詞
+  Up Next: 待播清單
+  Lyrics: 歌詞
+  Related: 相關推薦
