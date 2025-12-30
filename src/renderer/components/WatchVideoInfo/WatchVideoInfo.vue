@@ -141,6 +141,15 @@
         class="actionButton"
         @click="handleDownload"
       />
+
+      <!-- Music Mode Button -->
+      <FtIconButton
+        :title="t('Music.Play in Music Mode')"
+        theme="secondary"
+        :icon="['fas', 'music']"
+        class="actionButton musicModeButton"
+        @click="openMusicMode"
+      />
     </div>
 
     <!-- Legacy Desktop Layout (hidden on mobile via CSS) -->
@@ -250,6 +259,15 @@
           :theme="quickBookmarkIconTheme"
           @click="toggleQuickBookmarked"
         />
+
+        <!-- Music Mode Button -->
+        <FtIconButton
+          :title="t('Music.Play in Music Mode')"
+          theme="secondary"
+          :icon="['fas', 'music']"
+          class="actionButton musicModeButton"
+          @click="openMusicMode"
+        />
       </div>
     </div>
 
@@ -289,6 +307,7 @@
 <script setup>
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from '../../composables/use-i18n-polyfill'
 
 import FtIconButton from '../FtIconButton/FtIconButton.vue'
@@ -423,7 +442,13 @@ const emit = defineEmits([
 
 const USING_ELECTRON = process.env.IS_ELECTRON
 
+const router = useRouter()
 const { locale, t } = useI18n()
+
+// Open video in Music Mode player
+function openMusicMode() {
+  router.push(`/music/play/${props.id}`)
+}
 
 /** @type {import('vue').ComputedRef<boolean>} */
 const hideSharingActions = computed(() => store.getters.getHideSharingActions)
