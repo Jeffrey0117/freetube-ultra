@@ -185,19 +185,19 @@ src/renderer/
 ### Phase 1: Foundation
 | Task | Status | Commit |
 |------|--------|--------|
-| Create docs/MUSIC_MODE_MVP.md | ✅ Done | - |
-| Create MusicHome view folder | ⬜ Todo | - |
-| Create MusicHome.vue skeleton | ⬜ Todo | - |
-| Add /music route | ⬜ Todo | - |
+| Create docs/MUSIC_MODE_MVP.md | ✅ Done | 8a07379 |
+| Create MusicHome view folder | ✅ Done | - |
+| Create MusicHome.vue skeleton | ✅ Done | - |
+| Add /music route | ✅ Done | - |
 
 ### Phase 2: Components
 | Task | Status | Commit |
 |------|--------|--------|
-| MusicHeader component | ⬜ Todo | - |
-| MusicCategoryPills component | ⬜ Todo | - |
-| MusicCardGrid component | ⬜ Todo | - |
-| MusicSongsList component | ⬜ Todo | - |
-| MusicBottomNav component | ⬜ Todo | - |
+| MusicHeader component | ✅ Done | - |
+| MusicCategoryPills component | ✅ Done | - |
+| MusicCardGrid component | ✅ Done | - |
+| MusicSongsList component | ✅ Done | - |
+| MusicBottomNav component | ✅ Done | - |
 
 ### Phase 3: Integration
 | Task | Status | Commit |

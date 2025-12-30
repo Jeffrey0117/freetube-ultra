@@ -1221,3 +1221,23 @@ KeyboardShortcutPrompt:
   End: Seek to the end of the video
   Skip to Next Video: Skip to the next video in a playlist or next recommended video
   Skip to Previous Video: Skip to the previous video in a playlist
+
+# Music Mode
+Music:
+  Quick Picks: Quick Picks
+  Songs: Songs
+  Play All: Play All
+  Home: Home
+  Hot: Hot
+  Search: Search
+  Library: Library
+  Trending: Trending
+  Chill: Chill
+  Workout: Workout
+  Focus: Focus
+  Party: Party
+  Podcast: Podcast
+  Now Playing: Now Playing
+  Add to Queue: Add to Queue
+  Play Next: Play Next
+  Go to Artist: Go to Artist

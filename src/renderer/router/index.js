@@ -15,6 +15,7 @@ import Watch from '../views/Watch/Watch.vue'
 import Hashtag from '../views/Hashtag/Hashtag.vue'
 import Post from '../views/Post.vue'
 import MusicPlayer from '../components/MusicPlayer/MusicPlayer.vue'
+import MusicHome from '../views/Music/MusicHome.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -23,10 +24,9 @@ const router = createRouter({
       path: '/',
       name: 'default',
       meta: {
-        // Web 模式預設顯示 Popular (熱門影片)，Electron 模式顯示 Subscriptions
-        title: process.env.SUPPORTS_LOCAL_API ? 'Subscriptions' : 'Most Popular'
+        title: 'Most Popular'
       },
-      component: process.env.SUPPORTS_LOCAL_API ? Subscriptions : Popular
+      component: Popular
     },
     {
       path: '/subscriptions',
@@ -166,7 +166,31 @@ const router = createRouter({
       meta: {
         title: 'Music'
       },
-      component: Popular // 暫時使用 Popular，之後可換成專門的音樂首頁
+      component: MusicHome
+    },
+    {
+      path: '/music/trending',
+      name: 'musicTrending',
+      meta: {
+        title: 'Trending Music'
+      },
+      component: MusicHome // TODO: Create dedicated trending page
+    },
+    {
+      path: '/music/search',
+      name: 'musicSearch',
+      meta: {
+        title: 'Search Music'
+      },
+      component: MusicHome // TODO: Create dedicated search page
+    },
+    {
+      path: '/music/library',
+      name: 'musicLibrary',
+      meta: {
+        title: 'Music Library'
+      },
+      component: MusicHome // TODO: Create dedicated library page
     },
     {
       path: '/music/play/:id',
