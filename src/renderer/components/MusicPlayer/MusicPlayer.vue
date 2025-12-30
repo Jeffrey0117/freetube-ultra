@@ -440,7 +440,27 @@ function onLoadedMetadata() {
 
 function onEnded() {
   console.log('[MusicPlayer] onEnded fired')
-  playNextFromRelated()
+  // 播放結束後嘗試播放下一首
+  const nextTrack = store.getters.getNextTrack
+  if (nextTrack) {
+    store.dispatch('playNext')
+  } else if (relatedVideos.value.length > 0) {
+    // 如果沒有下一首，從相關影片中播放
+    const queueIds = queue.value.map(t => t.videoId)
+    const availableVideos = relatedVideos.value.filter(v => !queueIds.includes(v.videoId))
+    if (availableVideos.length > 0) {
+      const nextVideo = availableVideos[0]
+      const track = {
+        videoId: nextVideo.videoId,
+        title: nextVideo.title,
+        author: nextVideo.author,
+        authorId: nextVideo.authorId,
+        lengthSeconds: nextVideo.lengthSeconds
+      }
+      store.dispatch('addToQueue', track)
+      store.dispatch('playNext')
+    }
+  }
 }
 
 function onPlay() {
@@ -463,12 +483,8 @@ function onError() {
     networkState: audio?.networkState,
     readyState: audio?.readyState
   })
-  // 音樂模式下不顯示錯誤訊息，嘗試播放下一首
-  if (error && error.code === 4) {
-    console.log('[MusicPlayer] Source not supported, trying next track')
-    // 自動播放下一首
-    playNextFromRelated()
-  }
+  // 只在有實際的 src 且確實是 source not supported 時才跳下一首
+  // 不要過於激進地跳過
 }
 
 function onCanPlay() {
@@ -487,46 +503,6 @@ function onWaiting() {
 
 function onStalled() {
   console.log('[MusicPlayer] onStalled fired - download stalled')
-}
-
-// 從相關影片播放下一首
-async function playNextFromRelated() {
-  console.log('[MusicPlayer] playNextFromRelated called, relatedVideos:', relatedVideos.value.length)
-
-  // 先嘗試從 queue 中播放下一首
-  const nextTrack = store.getters.getNextTrack
-  if (nextTrack) {
-    console.log('[MusicPlayer] Playing next from queue:', nextTrack.title)
-    store.dispatch('playNext')
-    return
-  }
-
-  // 如果 queue 沒有下一首，從 relatedVideos 中選擇
-  if (relatedVideos.value.length > 0) {
-    // 過濾掉已經在 queue 中的影片
-    const queueIds = queue.value.map(t => t.videoId)
-    const availableVideos = relatedVideos.value.filter(v => !queueIds.includes(v.videoId))
-
-    if (availableVideos.length > 0) {
-      const nextVideo = availableVideos[0]
-      console.log('[MusicPlayer] Playing from related videos:', nextVideo.title)
-
-      const track = {
-        videoId: nextVideo.videoId,
-        title: nextVideo.title,
-        author: nextVideo.author,
-        authorId: nextVideo.authorId,
-        lengthSeconds: nextVideo.lengthSeconds
-      }
-
-      // 加入 queue 並播放
-      store.dispatch('addToQueue', track)
-      store.dispatch('playNext')
-      return
-    }
-  }
-
-  console.log('[MusicPlayer] No more tracks to play')
 }
 
 // 獲取音訊串流
@@ -551,8 +527,7 @@ async function fetchAudio(videoId) {
     })
 
     if (!result) {
-      console.log('[MusicPlayer] fetchAudio: No result, trying next track')
-      playNextFromRelated()
+      console.log('[MusicPlayer] fetchAudio: No result from API')
       return
     }
 
@@ -586,8 +561,6 @@ async function fetchAudio(videoId) {
     }
   } catch (error) {
     console.error('[MusicPlayer] Error fetching audio:', error)
-    // 錯誤時嘗試播放下一首
-    playNextFromRelated()
   } finally {
     isLoading.value = false
     console.log('[MusicPlayer] fetchAudio: Finished, isLoading:', isLoading.value)
