@@ -1,25 +1,10 @@
 /**
  * Lyrics API Helper
- * Uses mojigeci.com API for lyrics search and retrieval
+ * Uses local API proxy to fetch lyrics from mojigeci.com (避免 CORS 問題)
  */
 
-const LYRICS_API_BASE = 'https://mojigeci.com/api'
-
-/**
- * Generate signature for API requests
- * Note: The signature algorithm may need adjustment based on API requirements
- * @param {string} params - Query string parameters
- * @returns {string} - Signature hash
- */
-async function generateSignature(params) {
-  // Try to create a simple hash - the API might accept any valid-looking signature
-  // or we may need to reverse-engineer the actual algorithm
-  const encoder = new TextEncoder()
-  const data = encoder.encode(params + Date.now().toString())
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-}
+// 使用相對路徑，會自動使用當前 API server (支援 Cloudflare Tunnel)
+const LYRICS_API_BASE = '/api/v1/lyrics'
 
 /**
  * Search for songs by keyword (artist + song name)
@@ -30,18 +15,13 @@ async function generateSignature(params) {
  */
 export async function searchLyrics(keyword, page = 1, pageSize = 12) {
   try {
-    const timestamp = Date.now()
-    const signature = await generateSignature(`keyword=${keyword}&page=${page}`)
-
     const params = new URLSearchParams({
       keyword,
-      timestamp: timestamp.toString(),
-      signature,
       page: page.toString(),
       pageSize: pageSize.toString()
     })
 
-    const response = await fetch(`${LYRICS_API_BASE}/search_lists?${params}`)
+    const response = await fetch(`${LYRICS_API_BASE}/search?${params}`)
 
     if (!response.ok) {
       throw new Error(`Lyrics search failed: ${response.status}`)
@@ -71,20 +51,15 @@ export async function searchLyrics(keyword, page = 1, pageSize = 12) {
  */
 export async function getLyricsById(id, songName, songArtist, songCover = '', keyword = '') {
   try {
-    const timestamp = Date.now()
-    const signature = await generateSignature(`id=${id}&song_name=${songName}`)
-
     const params = new URLSearchParams({
       id: id.toString(),
       song_name: songName,
       song_artist: songArtist,
       song_cover: songCover,
-      keyword: keyword || songName,
-      timestamp: timestamp.toString(),
-      signature
+      keyword: keyword || songName
     })
 
-    const response = await fetch(`${LYRICS_API_BASE}/get_lyrics_by_id?${params}`)
+    const response = await fetch(`${LYRICS_API_BASE}/get?${params}`)
 
     if (!response.ok) {
       throw new Error(`Lyrics fetch failed: ${response.status}`)

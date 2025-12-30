@@ -1206,6 +1206,94 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // === Lyrics API Proxy ===
+    // 搜尋歌詞
+    if (path === '/api/v1/lyrics/search' || path === '/api/v1/lyrics/search/') {
+      const keyword = query.keyword || ''
+      const page = query.page || '1'
+      const pageSize = query.pageSize || '12'
+
+      if (!keyword) {
+        res.writeHead(400)
+        res.end(JSON.stringify({ error: 'Missing keyword parameter' }))
+        return
+      }
+
+      const timestamp = Date.now()
+      // 簡單的 signature (mojigeci API 似乎不嚴格驗證)
+      const signature = Buffer.from(`${keyword}${timestamp}`).toString('hex').substring(0, 64)
+
+      const targetUrl = `https://mojigeci.com/api/search_lists?keyword=${encodeURIComponent(keyword)}&timestamp=${timestamp}&signature=${signature}&page=${page}&pageSize=${pageSize}`
+
+      console.log(`  [LYRICS] Searching: ${keyword}`)
+
+      https.get(targetUrl, (proxyRes) => {
+        let data = ''
+        proxyRes.on('data', chunk => { data += chunk })
+        proxyRes.on('end', () => {
+          res.writeHead(proxyRes.statusCode, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          })
+          res.end(data)
+        })
+      }).on('error', (e) => {
+        console.error(`  [LYRICS] Search error: ${e.message}`)
+        res.writeHead(502)
+        res.end(JSON.stringify({ error: e.message }))
+      })
+      return
+    }
+
+    // 取得歌詞
+    if (path === '/api/v1/lyrics/get' || path === '/api/v1/lyrics/get/') {
+      const id = query.id || ''
+      const songName = query.song_name || ''
+      const songArtist = query.song_artist || ''
+      const songCover = query.song_cover || ''
+      const keyword = query.keyword || songName
+
+      if (!id) {
+        res.writeHead(400)
+        res.end(JSON.stringify({ error: 'Missing id parameter' }))
+        return
+      }
+
+      const timestamp = Date.now()
+      const signature = Buffer.from(`${id}${timestamp}`).toString('hex').substring(0, 64)
+
+      const params = new URLSearchParams({
+        id,
+        song_name: songName,
+        song_artist: songArtist,
+        song_cover: songCover,
+        keyword,
+        timestamp: timestamp.toString(),
+        signature
+      })
+
+      const targetUrl = `https://mojigeci.com/api/get_lyrics_by_id?${params}`
+
+      console.log(`  [LYRICS] Getting lyrics for ID: ${id}`)
+
+      https.get(targetUrl, (proxyRes) => {
+        let data = ''
+        proxyRes.on('data', chunk => { data += chunk })
+        proxyRes.on('end', () => {
+          res.writeHead(proxyRes.statusCode, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          })
+          res.end(data)
+        })
+      }).on('error', (e) => {
+        console.error(`  [LYRICS] Get error: ${e.message}`)
+        res.writeHead(502)
+        res.end(JSON.stringify({ error: e.message }))
+      })
+      return
+    }
+
     // Stats (for health check)
     if (path === '/api/v1/stats' || path === '/api/v1/stats/') {
       res.writeHead(200)
