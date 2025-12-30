@@ -19,14 +19,23 @@
     <!-- Album Art -->
     <div class="album-art-container">
       <img
-        v-if="currentTrack"
+        v-if="currentTrack && !isLoading"
         :src="thumbnailUrl"
         :alt="currentTrack.title"
         class="album-art"
         :class="{ playing: isPlaying }"
+        @error="onThumbnailError"
       >
+      <div v-else-if="isLoading" class="album-art-placeholder loading">
+        <FontAwesomeIcon :icon="['fas', 'spinner']" spin />
+      </div>
       <div v-else class="album-art-placeholder">
         <FontAwesomeIcon :icon="['fas', 'music']" />
+      </div>
+      <!-- Error Message -->
+      <div v-if="errorMessage" class="error-overlay">
+        <FontAwesomeIcon :icon="['fas', 'exclamation-circle']" />
+        <span>{{ errorMessage }}</span>
       </div>
     </div>
 
@@ -138,9 +147,19 @@
           v-for="(track, index) in queue"
           :key="track.videoId"
           class="queue-item"
-          :class="{ current: index === queueIndex }"
+          :class="{
+            current: index === queueIndex,
+            'drag-over': dragOverIndex === index
+          }"
+          draggable="true"
           @click="playFromQueue(index)"
+          @dragstart="handleDragStart($event, index)"
+          @dragover="handleDragOver($event, index)"
+          @dragleave="handleDragLeave"
+          @drop="handleDrop($event, index)"
+          @dragend="handleDragEnd"
         >
+          <FontAwesomeIcon :icon="['fas', 'grip-vertical']" class="queue-drag-handle" />
           <img :src="getThumbUrl(track)" class="queue-thumb" :alt="track.title">
           <div class="queue-info">
             <span class="queue-title">{{ track.title }}</span>
@@ -186,23 +205,36 @@
       @ended="onEnded"
       @play="onPlay"
       @pause="onPause"
+      @error="onError"
+      @canplay="onCanPlay"
+      @waiting="onWaiting"
+      @stalled="onStalled"
     />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import MusicModeToggle from '../MusicModeToggle/MusicModeToggle.vue'
 import store from '../../store/index'
+import { getAudioStreamUrl, videoToTrack } from '../../helpers/api/music'
 
 const router = useRouter()
+const route = useRoute()
 const audioElement = ref(null)
 const activeTab = ref('queue')
 const showQueue = ref(false)
 const isLiked = ref(false)
 const relatedVideos = ref([])
+const isLoading = ref(false)
+const audioUrl = ref('')
+const shouldAutoPlay = ref(false)
+const errorMessage = ref('')
+const dragOverIndex = ref(-1)
+const dragStartIndex = ref(-1)
+const thumbnailFallbackLevel = ref(0) // 0=maxresdefault, 1=sddefault, 2=hqdefault, 3=mqdefault
 
 // Store getters
 const currentTrack = computed(() => store.getters.getCurrentTrack)
@@ -215,15 +247,24 @@ const currentTime = computed(() => store.getters.getCurrentTime)
 const duration = computed(() => store.getters.getDuration)
 
 // Computed
+const thumbnailQualities = ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault']
+
 const thumbnailUrl = computed(() => {
   if (!currentTrack.value) return ''
   const videoId = currentTrack.value.videoId
-  return `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
+  const quality = thumbnailQualities[thumbnailFallbackLevel.value] || 'mqdefault'
+  return `https://i.ytimg.com/vi/${videoId}/${quality}.jpg`
 })
 
 const audioSrc = computed(() => {
-  // 使用 audio format URL，由 Watch component 傳入
-  return currentTrack.value?.audioUrl || ''
+  // 優先使用已獲取的 audioUrl，否則使用 track 上的 audioUrl
+  const src = audioUrl.value || currentTrack.value?.audioUrl || ''
+  console.log('[MusicPlayer] audioSrc computed:', {
+    audioUrl: audioUrl.value ? audioUrl.value.substring(0, 100) + '...' : '',
+    trackAudioUrl: currentTrack.value?.audioUrl ? currentTrack.value.audioUrl.substring(0, 100) + '...' : '',
+    finalSrc: src ? src.substring(0, 100) + '...' : ''
+  })
+  return src
 })
 
 const repeatIcon = computed(() => {
@@ -312,12 +353,64 @@ function removeFromQueue(index) {
   store.dispatch('removeFromQueue', index)
 }
 
+// Drag and drop handlers
+function handleDragStart(event, index) {
+  dragStartIndex.value = index
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', index.toString())
+  // Add a slight delay to allow the drag image to be captured
+  setTimeout(() => {
+    event.target.classList.add('dragging')
+  }, 0)
+}
+
+function handleDragOver(event, index) {
+  event.preventDefault()
+  event.dataTransfer.dropEffect = 'move'
+  dragOverIndex.value = index
+}
+
+function handleDragLeave() {
+  dragOverIndex.value = -1
+}
+
+function handleDrop(event, targetIndex) {
+  event.preventDefault()
+  const sourceIndex = dragStartIndex.value
+
+  if (sourceIndex !== -1 && sourceIndex !== targetIndex) {
+    // Reorder the queue
+    store.dispatch('reorderQueue', { fromIndex: sourceIndex, toIndex: targetIndex })
+  }
+
+  dragOverIndex.value = -1
+  dragStartIndex.value = -1
+}
+
+function handleDragEnd(event) {
+  event.target.classList.remove('dragging')
+  dragOverIndex.value = -1
+  dragStartIndex.value = -1
+}
+
 function playRelated(video) {
   store.dispatch('playTrack', video)
 }
 
 function getThumbUrl(track) {
   return `https://i.ytimg.com/vi/${track.videoId}/mqdefault.jpg`
+}
+
+function onThumbnailError(event) {
+  // Try next quality level if current one fails
+  if (thumbnailFallbackLevel.value < thumbnailQualities.length - 1) {
+    console.log('[MusicPlayer] Thumbnail failed to load, trying next quality:', thumbnailQualities[thumbnailFallbackLevel.value + 1])
+    thumbnailFallbackLevel.value++
+  } else {
+    console.log('[MusicPlayer] All thumbnail qualities failed')
+    // Hide the broken image by setting src to empty
+    event.target.style.display = 'none'
+  }
 }
 
 function formatTime(seconds) {
@@ -342,37 +435,194 @@ function onTimeUpdate() {
 }
 
 function onLoadedMetadata() {
+  console.log('[MusicPlayer] onLoadedMetadata fired:', {
+    duration: audioElement.value?.duration,
+    src: audioElement.value?.src ? audioElement.value.src.substring(0, 100) + '...' : ''
+  })
   if (audioElement.value) {
     store.dispatch('updateDuration', audioElement.value.duration)
   }
 }
 
 function onEnded() {
+  console.log('[MusicPlayer] onEnded fired')
   store.dispatch('playNext')
 }
 
 function onPlay() {
+  console.log('[MusicPlayer] onPlay fired')
   store.dispatch('setPlaying', true)
 }
 
 function onPause() {
+  console.log('[MusicPlayer] onPause fired')
   store.dispatch('setPlaying', false)
 }
 
-// Watch for track changes
-watch(currentTrack, (newTrack) => {
-  if (newTrack && audioElement.value) {
-    // Auto play new track
-    audioElement.value.load()
+function onError(event) {
+  const audio = audioElement.value
+  const error = audio?.error
+  console.error('[MusicPlayer] onError fired:', {
+    errorCode: error?.code,
+    errorMessage: error?.message,
+    src: audio?.src ? audio.src.substring(0, 100) + '...' : '',
+    networkState: audio?.networkState,
+    readyState: audio?.readyState
+  })
+  // Error codes: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
+  if (error) {
+    const errorMessages = {
+      1: 'Media loading aborted',
+      2: 'Network error',
+      3: 'Decode error',
+      4: 'Source not supported'
+    }
+    errorMessage.value = errorMessages[error.code] || 'Unknown audio error'
+  }
+}
+
+function onCanPlay() {
+  console.log('[MusicPlayer] onCanPlay fired - audio is ready to play, shouldAutoPlay:', shouldAutoPlay.value)
+  if (shouldAutoPlay.value && audioElement.value) {
+    shouldAutoPlay.value = false
     audioElement.value.play().catch(err => {
-      console.log('[MusicPlayer] Autoplay prevented:', err.message)
+      console.log('[MusicPlayer] onCanPlay play() prevented:', err.message)
     })
+  }
+}
+
+function onWaiting() {
+  console.log('[MusicPlayer] onWaiting fired - waiting for data')
+}
+
+function onStalled() {
+  console.log('[MusicPlayer] onStalled fired - download stalled')
+}
+
+// 獲取音訊串流
+async function fetchAudio(videoId) {
+  console.log('[MusicPlayer] fetchAudio called with videoId:', videoId)
+
+  if (!videoId) {
+    console.log('[MusicPlayer] fetchAudio: No videoId provided, returning')
+    return
+  }
+
+  isLoading.value = true
+  errorMessage.value = ''
+  audioUrl.value = ''
+
+  try {
+    console.log('[MusicPlayer] fetchAudio: Calling getAudioStreamUrl...')
+    const result = await getAudioStreamUrl(videoId)
+    console.log('[MusicPlayer] fetchAudio: getAudioStreamUrl result:', {
+      hasResult: !!result,
+      audioUrl: result?.audioUrl ? result.audioUrl.substring(0, 100) + '...' : null,
+      hasVideoInfo: !!result?.videoInfo
+    })
+
+    if (!result) {
+      console.log('[MusicPlayer] fetchAudio: No result, setting error')
+      errorMessage.value = 'Failed to load audio'
+      return
+    }
+
+    audioUrl.value = result.audioUrl
+    console.log('[MusicPlayer] fetchAudio: audioUrl.value set to:', audioUrl.value ? audioUrl.value.substring(0, 100) + '...' : '')
+
+    relatedVideos.value = result.videoInfo.recommendedVideos || []
+
+    // 如果沒有 currentTrack 或者 videoId 不同，設定新的 track
+    if (!currentTrack.value || currentTrack.value.videoId !== videoId) {
+      console.log('[MusicPlayer] fetchAudio: Creating new track from videoInfo')
+      const track = videoToTrack(result.videoInfo, result.audioUrl)
+      console.log('[MusicPlayer] fetchAudio: Track created:', {
+        title: track.title,
+        videoId: track.videoId,
+        audioUrl: track.audioUrl ? track.audioUrl.substring(0, 100) + '...' : ''
+      })
+      store.dispatch('playTrack', track)
+    }
+
+    // 設定 autoplay flag，等待 canplay 事件後播放
+    console.log('[MusicPlayer] fetchAudio: audioElement.value:', audioElement.value)
+    if (audioElement.value) {
+      console.log('[MusicPlayer] fetchAudio: Audio element src before load:', audioElement.value.src)
+      shouldAutoPlay.value = true
+      audioElement.value.load()
+      console.log('[MusicPlayer] fetchAudio: Audio element src after load:', audioElement.value.src)
+      console.log('[MusicPlayer] fetchAudio: Set shouldAutoPlay=true, waiting for canplay event')
+    } else {
+      console.log('[MusicPlayer] fetchAudio: No audio element available!')
+    }
+  } catch (error) {
+    console.error('[MusicPlayer] Error fetching audio:', error)
+    errorMessage.value = 'Error loading audio'
+  } finally {
+    isLoading.value = false
+    console.log('[MusicPlayer] fetchAudio: Finished, isLoading:', isLoading.value)
+  }
+}
+
+// Watch for route changes
+watch(
+  () => route.params.id,
+  (newId) => {
+    console.log('[MusicPlayer] Route watcher triggered:', {
+      newId,
+      path: route.path,
+      startsWithMusicPlay: route.path.startsWith('/music/play')
+    })
+    if (newId && route.path.startsWith('/music/play')) {
+      console.log('[MusicPlayer] Route watcher: Calling fetchAudio')
+      fetchAudio(newId)
+    }
+  },
+  { immediate: true }
+)
+
+// Watch for track changes (when navigating through queue)
+watch(currentTrack, (newTrack, oldTrack) => {
+  console.log('[MusicPlayer] currentTrack watcher triggered:', {
+    newTrackId: newTrack?.videoId,
+    oldTrackId: oldTrack?.videoId,
+    newTrackHasAudioUrl: !!newTrack?.audioUrl
+  })
+  if (newTrack && newTrack.videoId !== oldTrack?.videoId) {
+    // Reset thumbnail fallback level for new track
+    thumbnailFallbackLevel.value = 0
+    // 如果 track 已經有 audioUrl，直接播放
+    if (newTrack.audioUrl) {
+      console.log('[MusicPlayer] Track has audioUrl, setting directly:', newTrack.audioUrl.substring(0, 100) + '...')
+      audioUrl.value = newTrack.audioUrl
+      if (audioElement.value) {
+        console.log('[MusicPlayer] Loading audio element, waiting for canplay')
+        shouldAutoPlay.value = true
+        audioElement.value.load()
+      } else {
+        console.log('[MusicPlayer] No audio element available in track watcher!')
+      }
+    } else {
+      // 否則獲取新的 audioUrl
+      console.log('[MusicPlayer] Track has no audioUrl, fetching...')
+      fetchAudio(newTrack.videoId)
+    }
   }
 })
 
 // Lifecycle
 onMounted(() => {
+  console.log('[MusicPlayer] onMounted called')
+  console.log('[MusicPlayer] audioElement.value:', audioElement.value)
+  console.log('[MusicPlayer] route.params.id:', route.params.id)
+
   store.dispatch('initMusicMode')
+
+  // 如果有 route param，獲取音訊
+  if (route.params.id) {
+    console.log('[MusicPlayer] onMounted: Calling fetchAudio with route param')
+    fetchAudio(route.params.id)
+  }
 })
 </script>
 
@@ -444,13 +694,39 @@ onMounted(() => {
 .album-art-placeholder {
   width: 280px;
   height: 280px;
-  background: #333;
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 80px;
-  color: #666;
+  color: #555;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.album-art-placeholder.loading {
+  font-size: 48px;
+  color: #ff0000;
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+}
+
+.album-art-container {
+  position: relative;
+}
+
+.error-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 0, 0, 0.9);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
 }
 
 /* Track Info */
@@ -510,9 +786,10 @@ onMounted(() => {
   color: #ff0000;
 }
 
-/* Progress Bar */
+/* Progress Bar - YouTube Music Style (Red) */
 .progress-container {
   margin: 20px 0;
+  position: relative;
 }
 
 .progress-bar {
@@ -520,22 +797,69 @@ onMounted(() => {
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: #404040;
+  background: transparent;
   border-radius: 2px;
   cursor: pointer;
+  outline: none;
+  overflow: hidden;
 }
 
+/* WebKit (Chrome, Safari, Edge) - Track background */
+.progress-bar::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: #404040;
+  border-radius: 2px;
+}
+
+/* WebKit - Thumb with red fill effect */
 .progress-bar::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
-  background: #fff;
+  background: #ff0000;
   border-radius: 50%;
+  cursor: pointer;
+  margin-top: -4px;
+  box-shadow: -1000px 0 0 1000px #ff0000;
+  position: relative;
+  z-index: 1;
+  border: none;
+}
+
+/* Firefox - Track */
+.progress-bar::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: #404040;
+  border-radius: 2px;
+  border: none;
+}
+
+/* Firefox - Filled progress portion (red) */
+.progress-bar::-moz-range-progress {
+  height: 4px;
+  background: #ff0000;
+  border-radius: 2px 0 0 2px;
+}
+
+/* Firefox - Thumb */
+.progress-bar::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #ff0000;
+  border-radius: 50%;
+  border: none;
   cursor: pointer;
 }
 
-.progress-bar::-webkit-slider-runnable-track {
-  background: linear-gradient(to right, #ff0000 0%, #ff0000 var(--progress, 0%), #404040 var(--progress, 0%));
+/* Hover state - enlarge thumb */
+.progress-bar:hover::-webkit-slider-thumb {
+  transform: scale(1.3);
+}
+
+.progress-bar:hover::-moz-range-thumb {
+  transform: scale(1.3);
 }
 
 .time-display {
@@ -586,10 +910,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 1;
+  flex-shrink: 0;
+}
+
+/* Play icon needs slight offset to appear centered */
+.play-btn svg {
+  display: block;
 }
 
 .play-btn:hover {
   transform: scale(1.1);
+  background: #f0f0f0;
+}
+
+.play-btn:active {
+  transform: scale(1.05);
+  background: #e0e0e0;
 }
 
 .repeat-one-badge {
@@ -673,6 +1010,30 @@ onMounted(() => {
 
 .queue-item.current {
   background: rgba(255, 0, 0, 0.2);
+}
+
+.queue-item.drag-over {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px dashed #ff0000;
+}
+
+.queue-item.dragging {
+  opacity: 0.5;
+}
+
+.queue-drag-handle {
+  color: #666;
+  cursor: grab;
+  padding: 4px;
+  font-size: 14px;
+}
+
+.queue-drag-handle:hover {
+  color: #fff;
+}
+
+.queue-item:active .queue-drag-handle {
+  cursor: grabbing;
 }
 
 .queue-thumb {

@@ -349,6 +349,21 @@ export default defineComponent({
         )
       }
 
+      // Add music mode option
+      options.push(
+        {
+          type: 'divider'
+        },
+        {
+          label: this.$t('Video.Play in Music Mode'),
+          value: 'playMusicMode'
+        },
+        {
+          label: this.$t('Video.Add to Music Queue'),
+          value: 'addToMusicQueue'
+        }
+      )
+
       return options
     },
 
@@ -740,7 +755,58 @@ export default defineComponent({
         case 'unhideChannel':
           this.unhideChannel(this.channelName, this.channelId)
           break
+        case 'playMusicMode':
+          this.playInMusicMode()
+          break
+        case 'addToMusicQueue':
+          this.addToMusicQueue()
+          break
       }
+    },
+
+    playInMusicMode: function () {
+      console.log('[MusicMode] Playing:', this.id, this.title)
+
+      // 建立 track 物件
+      const track = {
+        videoId: this.id,
+        title: this.title,
+        author: this.channelName,
+        authorId: this.channelId,
+        lengthSeconds: this.lengthSeconds,
+        thumbnail: this.thumbnail
+      }
+
+      console.log('[MusicMode] Track:', track)
+
+      // 設定為當前播放
+      this.$store.dispatch('playTrack', track)
+
+      // 開啟音樂模式
+      if (!this.$store.getters.getIsMusicMode) {
+        this.$store.commit('SET_MUSIC_MODE', true)
+      }
+
+      // 導航到音樂播放器
+      this.$router.push(`/music/play/${this.id}`)
+    },
+
+    addToMusicQueue: function () {
+      // 建立 track 物件
+      const track = {
+        videoId: this.id,
+        title: this.title,
+        author: this.channelName,
+        authorId: this.channelId,
+        lengthSeconds: this.lengthSeconds,
+        thumbnail: this.thumbnail
+      }
+
+      // 加入播放佇列
+      this.$store.dispatch('addToQueue', track)
+
+      // 顯示提示
+      showToast(this.$t('Video.Added to Music Queue'))
     },
 
     parseVideoData: function () {

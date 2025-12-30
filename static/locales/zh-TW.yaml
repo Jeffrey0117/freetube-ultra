@@ -780,6 +780,9 @@ Video:
   'Live Chat is unavailable for this stream. It may have been disabled by the uploader.': 即時聊天在此串流不可用。其可能被上傳者停用了。
   Unhide Channel: 顯示頻道
   Hide Channel: 隱藏頻道
+  Play in Music Mode: 音樂模式播放
+  Add to Music Queue: 加入音樂佇列
+  Added to Music Queue: 已加入音樂佇列
   More Options: 更多選項
   Player:
     TranslatedCaptionTemplate: '{language}（翻譯自「{originalLanguage}」）'

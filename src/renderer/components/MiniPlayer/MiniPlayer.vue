@@ -228,10 +228,11 @@ function closeMiniPlayer() {
   }
 }
 
-/* Sidebar adjustment - leave space for sidebar */
+/* Desktop view - full width */
 @media (min-width: 769px) {
   .mini-player {
-    left: var(--side-nav-width, 200px);
+    left: 0;
+    width: 100%;
   }
 }
 </style>

@@ -99,3 +99,15 @@
 .deArrowToggleIcon {
   inline-size: 1em;
 }
+
+// Music mode button styling
+.musicModeButton {
+  color: var(--primary-color);
+
+  &:hover,
+  &:focus-visible {
+    color: var(--primary-color);
+    background-color: var(--side-nav-hover-color);
+    border-radius: 50%;
+  }
+}

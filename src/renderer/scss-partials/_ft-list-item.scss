@@ -278,6 +278,9 @@ $yt-grid-gap: 16px;
 
     .buttonStack {
       grid-area: optionsExternalButton;
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
     }
 
     .optionsButton {
@@ -478,6 +481,17 @@ $yt-grid-gap: 16px;
     .optionsButton {
       opacity: 0;
       transition: visibility 0s, opacity 0.2s linear;
+    }
+  }
+
+  // Music mode button - always visible
+  .musicModeButton {
+    opacity: 1;
+    color: var(--primary-color);
+
+    &:hover {
+      background-color: var(--side-nav-hover-color);
+      border-radius: 50%;
     }
   }
 }

@@ -145,6 +145,29 @@ const actions = {
     commit('SET_PLAYING', false)
   },
 
+  reorderQueue({ commit, state }, { fromIndex, toIndex }) {
+    const newQueue = [...state.queue]
+    const [movedItem] = newQueue.splice(fromIndex, 1)
+    newQueue.splice(toIndex, 0, movedItem)
+
+    commit('SET_QUEUE', newQueue)
+
+    // 更新 queueIndex 以追蹤當前播放的歌曲
+    let newQueueIndex = state.queueIndex
+    if (fromIndex === state.queueIndex) {
+      // 移動的是當前播放的歌曲
+      newQueueIndex = toIndex
+    } else if (fromIndex < state.queueIndex && toIndex >= state.queueIndex) {
+      // 從當前播放之前移動到之後
+      newQueueIndex = state.queueIndex - 1
+    } else if (fromIndex > state.queueIndex && toIndex <= state.queueIndex) {
+      // 從當前播放之後移動到之前
+      newQueueIndex = state.queueIndex + 1
+    }
+
+    commit('SET_QUEUE_INDEX', newQueueIndex)
+  },
+
   toggleShuffle({ commit, state }) {
     commit('SET_SHUFFLE', !state.shuffleEnabled)
     if (!state.shuffleEnabled) {

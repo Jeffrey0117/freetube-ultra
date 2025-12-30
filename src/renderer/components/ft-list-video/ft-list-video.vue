@@ -229,6 +229,15 @@
       </div>
       <div class="buttonStack">
         <ft-icon-button
+          class="musicModeButton"
+          :icon="['fas', 'music']"
+          :title="$t('Video.Play in Music Mode')"
+          theme="base-no-default"
+          :size="16"
+          :use-shadow="false"
+          @click="playInMusicMode"
+        />
+        <ft-icon-button
           class="optionsButton"
           :icon="['fas', 'ellipsis-v']"
           :title="$t('Video.More Options')"
