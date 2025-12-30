@@ -6,9 +6,102 @@
 const http = require('http')
 const https = require('https')
 const os = require('os')
+const fs = require('fs')
+const path = require('path')
 const { Innertube, ClientType } = require('youtubei.js')
 
 const PORT = process.env.PORT || 3001
+
+// === Lyrics Cache ===
+const LYRICS_CACHE_DIR = path.join(os.homedir(), '.freetube-cache', 'lyrics')
+const lyricsCache = new Map() // In-memory cache for fast access
+
+// Ensure cache directory exists
+if (!fs.existsSync(LYRICS_CACHE_DIR)) {
+  fs.mkdirSync(LYRICS_CACHE_DIR, { recursive: true })
+  console.log('[CACHE] Created lyrics cache directory:', LYRICS_CACHE_DIR)
+}
+
+// Generate a cache key from track info
+function generateLyricsCacheKey(track, artist) {
+  const normalized = `${track.toLowerCase().trim()}_${artist.toLowerCase().trim()}`
+  // Create a simple hash for the filename
+  const hash = Buffer.from(normalized).toString('base64url').substring(0, 32)
+  return hash
+}
+
+// Get cache file path
+function getLyricsCacheFilePath(key) {
+  return path.join(LYRICS_CACHE_DIR, `${key}.json`)
+}
+
+// Load lyrics from cache
+function loadLyricsFromCache(track, artist) {
+  const key = generateLyricsCacheKey(track, artist)
+
+  // Check in-memory cache first
+  if (lyricsCache.has(key)) {
+    console.log('[CACHE] Lyrics found in memory:', track, 'by', artist)
+    return lyricsCache.get(key)
+  }
+
+  // Check file cache
+  const filePath = getLyricsCacheFilePath(key)
+  if (fs.existsSync(filePath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+      lyricsCache.set(key, data) // Load into memory
+      console.log('[CACHE] Lyrics loaded from file:', track, 'by', artist)
+      return data
+    } catch (e) {
+      console.error('[CACHE] Error reading cache file:', e.message)
+    }
+  }
+
+  return null
+}
+
+// Save lyrics to cache
+function saveLyricsToCache(track, artist, lyricsData) {
+  const key = generateLyricsCacheKey(track, artist)
+
+  // Save to memory
+  lyricsCache.set(key, lyricsData)
+
+  // Save to file
+  const filePath = getLyricsCacheFilePath(key)
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(lyricsData, null, 2))
+    console.log('[CACHE] Lyrics saved:', track, 'by', artist)
+  } catch (e) {
+    console.error('[CACHE] Error saving cache file:', e.message)
+  }
+}
+
+// Load all cached lyrics into memory on startup
+function loadLyricsCacheFromDisk() {
+  try {
+    const files = fs.readdirSync(LYRICS_CACHE_DIR)
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const key = file.replace('.json', '')
+        const filePath = path.join(LYRICS_CACHE_DIR, file)
+        try {
+          const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+          lyricsCache.set(key, data)
+        } catch (e) {
+          // Skip corrupted files
+        }
+      }
+    }
+    console.log(`[CACHE] Loaded ${lyricsCache.size} cached lyrics from disk`)
+  } catch (e) {
+    console.error('[CACHE] Error loading cache:', e.message)
+  }
+}
+
+// Initialize cache on startup
+loadLyricsCacheFromDisk()
 
 // 自動偵測本機 IP
 function getLocalIP() {
@@ -1206,26 +1299,134 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    // === Lyrics API Proxy ===
-    // 搜尋歌詞
-    if (path === '/api/v1/lyrics/search' || path === '/api/v1/lyrics/search/') {
-      const keyword = query.keyword || ''
-      const page = query.page || '1'
-      const pageSize = query.pageSize || '12'
+    // === Lyrics Cache API (Local) ===
+    // Check cache for lyrics
+    if (path === '/api/v1/lyrics/cache' && req.method === 'GET') {
+      const track = query.track || ''
+      const artist = query.artist || ''
 
-      if (!keyword) {
+      if (!track) {
         res.writeHead(400)
-        res.end(JSON.stringify({ error: 'Missing keyword parameter' }))
+        res.end(JSON.stringify({ error: 'Missing track parameter' }))
         return
       }
 
-      const timestamp = Date.now()
-      // 簡單的 signature (mojigeci API 似乎不嚴格驗證)
-      const signature = Buffer.from(`${keyword}${timestamp}`).toString('hex').substring(0, 64)
+      const cached = loadLyricsFromCache(track, artist)
+      if (cached) {
+        console.log(`  [LYRICS] Cache HIT: ${track} by ${artist}`)
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ found: true, data: cached }))
+      } else {
+        console.log(`  [LYRICS] Cache MISS: ${track} by ${artist}`)
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ found: false }))
+      }
+      return
+    }
 
-      const targetUrl = `https://mojigeci.com/api/search_lists?keyword=${encodeURIComponent(keyword)}&timestamp=${timestamp}&signature=${signature}&page=${page}&pageSize=${pageSize}`
+    // Save lyrics to cache (POST)
+    if (path === '/api/v1/lyrics/cache' && req.method === 'POST') {
+      let body = ''
+      req.on('data', chunk => { body += chunk })
+      req.on('end', () => {
+        try {
+          const { track, artist, lyricsData } = JSON.parse(body)
+          if (!track || !lyricsData) {
+            res.writeHead(400)
+            res.end(JSON.stringify({ error: 'Missing track or lyricsData' }))
+            return
+          }
+          saveLyricsToCache(track, artist || '', lyricsData)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ success: true }))
+        } catch (e) {
+          res.writeHead(400)
+          res.end(JSON.stringify({ error: 'Invalid JSON' }))
+        }
+      })
+      return
+    }
 
-      console.log(`  [LYRICS] Searching: ${keyword}`)
+    // === LRCLIB Proxy with Auto-Caching ===
+    // Fetch lyrics from LRCLIB (with caching)
+    if (path === '/api/v1/lyrics/fetch' || path === '/api/v1/lyrics/fetch/') {
+      const track = query.track || ''
+      const artist = query.artist || ''
+      const duration = query.duration || '0'
+
+      if (!track) {
+        res.writeHead(400)
+        res.end(JSON.stringify({ error: 'Missing track parameter' }))
+        return
+      }
+
+      // Check cache first
+      const cached = loadLyricsFromCache(track, artist)
+      if (cached) {
+        console.log(`  [LYRICS] Serving from cache: ${track} by ${artist}`)
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(cached))
+        return
+      }
+
+      // Fetch from LRCLIB
+      console.log(`  [LYRICS] Fetching from LRCLIB: ${track} by ${artist}`)
+
+      const params = new URLSearchParams({
+        track_name: track,
+        artist_name: artist
+      })
+      if (duration && duration !== '0') {
+        params.append('duration', duration)
+      }
+
+      const targetUrl = `https://lrclib.net/api/get?${params}`
+
+      https.get(targetUrl, (proxyRes) => {
+        let data = ''
+        proxyRes.on('data', chunk => { data += chunk })
+        proxyRes.on('end', () => {
+          if (proxyRes.statusCode === 200) {
+            try {
+              const lyricsData = JSON.parse(data)
+              // Save to cache
+              saveLyricsToCache(track, artist, lyricsData)
+              res.writeHead(200, { 'Content-Type': 'application/json' })
+              res.end(data)
+            } catch (e) {
+              res.writeHead(500)
+              res.end(JSON.stringify({ error: 'Invalid response from LRCLIB' }))
+            }
+          } else if (proxyRes.statusCode === 404) {
+            // Not found - don't cache 404s
+            res.writeHead(404, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'Lyrics not found' }))
+          } else {
+            res.writeHead(proxyRes.statusCode, { 'Content-Type': 'application/json' })
+            res.end(data)
+          }
+        })
+      }).on('error', (e) => {
+        console.error(`  [LYRICS] LRCLIB error: ${e.message}`)
+        res.writeHead(502)
+        res.end(JSON.stringify({ error: e.message }))
+      })
+      return
+    }
+
+    // LRCLIB Search proxy (for fallback searches)
+    if (path === '/api/v1/lyrics/search' || path === '/api/v1/lyrics/search/') {
+      const q = query.q || ''
+
+      if (!q) {
+        res.writeHead(400)
+        res.end(JSON.stringify({ error: 'Missing q parameter' }))
+        return
+      }
+
+      console.log(`  [LYRICS] Searching LRCLIB: ${q}`)
+
+      const targetUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(q)}`
 
       https.get(targetUrl, (proxyRes) => {
         let data = ''
@@ -1245,52 +1446,20 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    // 取得歌詞
-    if (path === '/api/v1/lyrics/get' || path === '/api/v1/lyrics/get/') {
-      const id = query.id || ''
-      const songName = query.song_name || ''
-      const songArtist = query.song_artist || ''
-      const songCover = query.song_cover || ''
-      const keyword = query.keyword || songName
-
-      if (!id) {
-        res.writeHead(400)
-        res.end(JSON.stringify({ error: 'Missing id parameter' }))
-        return
+    // Cache statistics endpoint
+    if (path === '/api/v1/lyrics/stats' || path === '/api/v1/lyrics/stats/') {
+      let fileCount = 0
+      try {
+        fileCount = fs.readdirSync(LYRICS_CACHE_DIR).filter(f => f.endsWith('.json')).length
+      } catch (e) {
+        // Ignore
       }
-
-      const timestamp = Date.now()
-      const signature = Buffer.from(`${id}${timestamp}`).toString('hex').substring(0, 64)
-
-      const params = new URLSearchParams({
-        id,
-        song_name: songName,
-        song_artist: songArtist,
-        song_cover: songCover,
-        keyword,
-        timestamp: timestamp.toString(),
-        signature
-      })
-
-      const targetUrl = `https://mojigeci.com/api/get_lyrics_by_id?${params}`
-
-      console.log(`  [LYRICS] Getting lyrics for ID: ${id}`)
-
-      https.get(targetUrl, (proxyRes) => {
-        let data = ''
-        proxyRes.on('data', chunk => { data += chunk })
-        proxyRes.on('end', () => {
-          res.writeHead(proxyRes.statusCode, {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          })
-          res.end(data)
-        })
-      }).on('error', (e) => {
-        console.error(`  [LYRICS] Get error: ${e.message}`)
-        res.writeHead(502)
-        res.end(JSON.stringify({ error: e.message }))
-      })
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({
+        cacheDir: LYRICS_CACHE_DIR,
+        memoryCacheSize: lyricsCache.size,
+        diskCacheSize: fileCount
+      }))
       return
     }
 
@@ -1333,6 +1502,13 @@ initInnertube().then(() => {
     console.log('    /api/v1/videos/:id')
     console.log('    /api/v1/trending')
     console.log('    /videoplayback?url=...')
+    console.log('')
+    console.log('  Lyrics Cache:')
+    console.log('    /api/v1/lyrics/fetch?track=...&artist=...')
+    console.log('    /api/v1/lyrics/search?q=...')
+    console.log('    /api/v1/lyrics/cache (GET/POST)')
+    console.log('    /api/v1/lyrics/stats')
+    console.log(`    Cache Dir: ${LYRICS_CACHE_DIR}`)
     console.log('')
     console.log('='.repeat(50))
     console.log('')

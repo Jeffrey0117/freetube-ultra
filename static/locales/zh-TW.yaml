@@ -1153,3 +1153,51 @@ Music:
   Up Next: 待播清單
   Lyrics: 歌詞
   Related: 相關推薦
+
+# Onboarding
+Onboarding:
+  Welcome to FreeTube: 歡迎使用 FreeTube！
+  A private YouTube experience: 私密的 YouTube 體驗
+  Import from YouTube: 從 YouTube 匯入
+  Bring your subscriptions: 帶上你的訂閱頻道
+  Choose Interests: 選擇興趣
+  Get personalized recommendations: 獲得個人化推薦
+  Start Exploring: 開始探索
+  Search and browse freely: 自由搜尋和瀏覽
+  Skip for now: 先跳過
+  Back: 返回
+  Import Your Subscriptions: 匯入你的訂閱
+  Method 1: Google Takeout: 方法一：Google Takeout
+  Recommended: 推薦
+  Go to Google Takeout: 前往 takeout.google.com
+  Select YouTube data: 只選擇 YouTube 資料
+  Download and extract: 下載並解壓縮 ZIP 檔
+  Import the subscriptions file: 找到 subscriptions.json 並匯入
+  Open Google Takeout: 開啟 Google Takeout
+  Method 2: Paste Channel URL: 方法二：貼上頻道網址
+  Paste a YouTube channel URL in the search box: 你也可以逐一貼上頻道網址
+  Paste YouTube channel URL: https://youtube.com/@頻道名稱
+  Add Channel: 新增頻道
+  Go to Import Settings: 前往匯入設定
+  Skip to Interests: 跳到選擇興趣
+  What are you interested in?: 你對什麼感興趣？
+  Select categories to get channel recommendations: 選擇類別以獲得個人化推薦
+  Interest:
+    music: 音樂
+    gaming: 遊戲
+    tech: 科技
+    education: 教育
+    entertainment: 娛樂
+    news: 新聞
+    sports: 體育
+    cooking: 美食
+    travel: 旅遊
+    science: 科學
+    art: 藝術
+    fitness: 健身
+  See Recommendations: 查看推薦
+  Skip: 跳過
+  Recommended Channels: 推薦頻道
+  Select channels to subscribe: 選擇想要訂閱的頻道
+  Subscribe to Selected: 訂閱已選頻道
+  Start Without Subscribing: 不訂閱直接開始

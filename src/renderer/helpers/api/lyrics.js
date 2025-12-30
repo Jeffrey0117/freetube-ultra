@@ -1,12 +1,28 @@
 /**
  * Lyrics API Helper
- * Uses LRCLIB.net - Free synced lyrics API (no auth required)
+ * Uses local server cache with LRCLIB.net fallback
+ * Local server caches lyrics so multiple devices don't need to call LRCLIB
  */
+
+import store from '../../store/index'
 
 const LRCLIB_API = 'https://lrclib.net/api'
 
 /**
- * Search for lyrics on LRCLIB
+ * Get local API server base URL
+ */
+function getLocalApiUrl() {
+  // Get from Vuex store (settings)
+  const currentInvidiousInstance = store.getters.getCurrentInvidiousInstance
+  if (currentInvidiousInstance) {
+    return currentInvidiousInstance
+  }
+  // Fallback to localhost
+  return 'http://localhost:3001'
+}
+
+/**
+ * Search for lyrics using local server (with LRCLIB proxy)
  * @param {string} track - Track name
  * @param {string} artist - Artist name
  * @returns {Promise<Array>} - Array of results
@@ -14,6 +30,19 @@ const LRCLIB_API = 'https://lrclib.net/api'
 export async function searchLyrics(track, artist = '') {
   try {
     const query = artist ? `${track} ${artist}` : track
+    const localApi = getLocalApiUrl()
+
+    // Try local server first (proxies to LRCLIB)
+    try {
+      const response = await fetch(`${localApi}/api/v1/lyrics/search?q=${encodeURIComponent(query)}`)
+      if (response.ok) {
+        return await response.json()
+      }
+    } catch (e) {
+      console.log('[Lyrics] Local server unavailable, falling back to direct LRCLIB')
+    }
+
+    // Fallback to direct LRCLIB
     const response = await fetch(`${LRCLIB_API}/search?q=${encodeURIComponent(query)}`)
 
     if (!response.ok) {
@@ -29,6 +58,7 @@ export async function searchLyrics(track, artist = '') {
 
 /**
  * Get lyrics by exact match (preferred method)
+ * Uses local server cache when available
  * @param {string} track - Track name
  * @param {string} artist - Artist name
  * @param {string} album - Album name (optional)
@@ -37,6 +67,31 @@ export async function searchLyrics(track, artist = '') {
  */
 export async function getLyricsByMatch(track, artist, album = '', duration = 0) {
   try {
+    const localApi = getLocalApiUrl()
+
+    // Try local server first (has caching)
+    try {
+      const params = new URLSearchParams({
+        track: track,
+        artist: artist
+      })
+      if (duration) params.append('duration', Math.round(duration).toString())
+
+      const response = await fetch(`${localApi}/api/v1/lyrics/fetch?${params}`)
+
+      if (response.status === 404) {
+        return null // Not found
+      }
+
+      if (response.ok) {
+        console.log('[Lyrics] Got lyrics from local server (cached or proxied)')
+        return await response.json()
+      }
+    } catch (e) {
+      console.log('[Lyrics] Local server unavailable, falling back to direct LRCLIB')
+    }
+
+    // Fallback to direct LRCLIB
     const params = new URLSearchParams({
       track_name: track,
       artist_name: artist
@@ -54,10 +109,35 @@ export async function getLyricsByMatch(track, artist, album = '', duration = 0) 
       throw new Error(`LRCLIB get failed: ${response.status}`)
     }
 
-    return await response.json()
+    const lyricsData = await response.json()
+
+    // Try to save to local cache (best effort)
+    saveLyricsToLocalCache(track, artist, lyricsData)
+
+    return lyricsData
   } catch (error) {
     console.error('[Lyrics] Fetch error:', error)
     return null
+  }
+}
+
+/**
+ * Save lyrics to local server cache (best effort, doesn't block)
+ * @param {string} track - Track name
+ * @param {string} artist - Artist name
+ * @param {Object} lyricsData - Lyrics data to cache
+ */
+async function saveLyricsToLocalCache(track, artist, lyricsData) {
+  try {
+    const localApi = getLocalApiUrl()
+    await fetch(`${localApi}/api/v1/lyrics/cache`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ track, artist, lyricsData })
+    })
+    console.log('[Lyrics] Saved to local cache:', track, 'by', artist)
+  } catch (e) {
+    // Ignore - cache is optional
   }
 }
 

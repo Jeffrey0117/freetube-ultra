@@ -11,6 +11,7 @@ import subscriptionCache from './modules/subscription-cache'
 import utils from './modules/utils'
 import player from './modules/player'
 import musicMode from './modules/musicMode'
+import onboarding from './modules/onboarding'
 
 export default createStore({
   modules: {
@@ -24,6 +25,7 @@ export default createStore({
     utils,
     player,
     musicMode,
+    onboarding,
   },
 
   // Detects unsafe changes to the store state e.g. outside of mutations

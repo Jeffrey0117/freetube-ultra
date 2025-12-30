@@ -109,6 +109,7 @@
       v-if="showProgressBar"
     />
     <MiniPlayer />
+    <FtOnboarding />
   </div>
 </template>
 
@@ -131,6 +132,7 @@ import FtCreatePlaylistPrompt from './components/FtCreatePlaylistPrompt/FtCreate
 import FtKeyboardShortcutPrompt from './components/FtKeyboardShortcutPrompt/FtKeyboardShortcutPrompt.vue'
 import FtSearchFilters from './components/FtSearchFilters/FtSearchFilters.vue'
 import MiniPlayer from './components/MiniPlayer/MiniPlayer.vue'
+import FtOnboarding from './components/FtOnboarding/FtOnboarding.vue'
 
 import store from './store/index'
 

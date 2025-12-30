@@ -1247,3 +1247,51 @@ Music:
   Up Next: UP NEXT
   Lyrics: LYRICS
   Related: RELATED
+
+# Onboarding
+Onboarding:
+  Welcome to FreeTube: Welcome to FreeTube!
+  A private YouTube experience: A private YouTube experience
+  Import from YouTube: Import from YouTube
+  Bring your subscriptions: Bring your subscriptions with you
+  Choose Interests: Choose Your Interests
+  Get personalized recommendations: Get personalized channel recommendations
+  Start Exploring: Start Exploring
+  Search and browse freely: Search and browse freely
+  Skip for now: Skip for now
+  Back: Back
+  Import Your Subscriptions: Import Your Subscriptions
+  Method 1: Google Takeout: 'Method 1: Google Takeout'
+  Recommended: Recommended
+  Go to Google Takeout: Go to takeout.google.com
+  Select YouTube data: Select only YouTube data
+  Download and extract: Download and extract the ZIP file
+  Import the subscriptions file: Find subscriptions.json and import it
+  Open Google Takeout: Open Google Takeout
+  Method 2: Paste Channel URL: 'Method 2: Paste Channel URL'
+  Paste a YouTube channel URL in the search box: You can also paste channel URLs one by one
+  Paste YouTube channel URL: https://youtube.com/@channelname
+  Add Channel: Add Channel
+  Go to Import Settings: Go to Import Settings
+  Skip to Interests: Skip to Interests
+  What are you interested in?: What are you interested in?
+  Select categories to get channel recommendations: Select categories to get personalized recommendations
+  Interest:
+    music: Music
+    gaming: Gaming
+    tech: Tech
+    education: Education
+    entertainment: Entertainment
+    news: News
+    sports: Sports
+    cooking: Cooking
+    travel: Travel
+    science: Science
+    art: Art
+    fitness: Fitness
+  See Recommendations: See Recommendations
+  Skip: Skip
+  Recommended Channels: Recommended Channels
+  Select channels to subscribe: Select channels you'd like to follow
+  Subscribe to Selected: Subscribe to Selected
+  Start Without Subscribing: Start Without Subscribing

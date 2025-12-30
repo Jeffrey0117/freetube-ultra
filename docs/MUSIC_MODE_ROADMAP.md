@@ -27,25 +27,31 @@
 
 ---
 
-## Phase 2: 播放體驗優化 📋
+## Phase 2: 播放體驗優化 ✅
 
-### 2.1 預載下一首 📋
-- [ ] 當前歌曲播放到 80% 時，預先獲取下一首的 audioUrl
-- [ ] 快取 audioUrl (避免重複請求)
-- [ ] 預載完成後顯示指示器
+### 2.1 預載下一首 ✅
+- [x] 當前歌曲播放到 80% 時，預先獲取下一首的 audioUrl
+- [x] 快取 audioUrl (LRU cache, max 10 entries)
+- [x] 預載完成後 console log
 
-### 2.2 記住播放設定 📋
-- [ ] localStorage 儲存音量
-- [ ] localStorage 儲存循環模式
-- [ ] localStorage 儲存隨機模式
-- [ ] 下次開啟自動套用
+### 2.2 記住播放設定 ✅
+- [x] localStorage 儲存音量
+- [x] localStorage 儲存循環模式
+- [x] localStorage 儲存隨機模式
+- [x] 下次開啟自動套用
 
-### 2.3 播放速度控制 📋
+### 2.3 歌詞快取 ✅
+- [x] 本地服務器端歌詞快取 (檔案系統持久化)
+- [x] 多裝置共享快取 (Device A 抓過，Device B 不用再打 API)
+- [x] 快取位置: ~/.freetube-cache/lyrics/
+- [x] 自動 fallback 到直接 LRCLIB
+
+### 2.4 播放速度控制 📋
 - [ ] 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
 - [ ] UI 按鈕切換
 - [ ] 記住上次設定
 
-### 2.4 Crossfade 淡入淡出 📋
+### 2.5 Crossfade 淡入淡出 📋
 - [ ] 設定頁面開關 (預設關閉)
 - [ ] 可調整淡入淡出時長 (1-5秒)
 - [ ] 雙 audio element 實現
