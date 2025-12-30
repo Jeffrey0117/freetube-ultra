@@ -45,9 +45,7 @@ export default defineComponent({
   align-items: center;
   padding: 12px 20px;
   background-color: var(--music-bg, #0f0f0f);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  /* Not sticky - FreeTube TopNav is already sticky/fixed */
 }
 
 .music-logo {

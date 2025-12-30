@@ -12,6 +12,7 @@
   min-height: 100vh;
   background-color: var(--music-bg);
   color: var(--music-text);
+  padding-top: 60px; /* Space for top header */
   padding-bottom: 140px; /* Space for mini player + bottom nav */
 }
 
@@ -62,11 +63,22 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .music-home {
+    padding-top: 70px; /* Extra space for fixed TopNav on mobile */
+  }
+
   .music-section {
     padding: 12px 16px;
   }
 
   .section-header h2 {
     font-size: 18px;
+  }
+}
+
+/* Small mobile (TopNav is fixed at <=680px) */
+@media (max-width: 680px) {
+  .music-home {
+    padding-top: 75px; /* TopNav 60px + some breathing room */
   }
 }
