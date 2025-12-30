@@ -483,11 +483,22 @@ function scrollToCurrentLyric() {
   const activeLine = container.querySelector(`.lyrics-line[data-index="${currentLyricIndex.value}"]`)
   if (!activeLine) return
 
-  // 直接用 scrollIntoView 讓當前行置中
-  activeLine.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center'
-  })
+  // 計算當前行位置
+  const containerHeight = container.clientHeight
+  const containerMiddle = containerHeight / 2
+  const lineTop = activeLine.offsetTop
+  const lineHeight = activeLine.offsetHeight
+
+  // 只有當歌詞超過中間位置才開始捲動
+  // 這樣開頭的歌詞會保持在原位
+  const targetScroll = lineTop - containerMiddle + (lineHeight / 2)
+
+  if (targetScroll > 0) {
+    container.scrollTo({
+      top: targetScroll,
+      behavior: 'smooth'
+    })
+  }
 }
 
 function seekToLyric(time) {
@@ -1236,37 +1247,19 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 20px;
+  padding: 20px;
+  padding-bottom: 50vh; /* 只有下方留空間，讓最後幾句可以置中 */
   scroll-behavior: smooth;
-  /* 上下漸層遮罩，讓歌詞有淡入淡出效果 */
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 20%,
-    black 80%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 20%,
-    black 80%,
-    transparent 100%
-  );
-  /* 讓當前歌詞可以置中：上下各留 50vh 空間 */
-  padding-top: 40vh;
-  padding-bottom: 40vh;
 }
 
 .lyrics-line {
-  font-size: 16px;
-  line-height: 1.8;
+  font-size: 18px;
+  line-height: 2;
   color: rgba(255, 255, 255, 0.4);
   margin: 0;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 4px 0;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: color 0.3s ease;
   /* 不換行，保持一行 */
   white-space: nowrap;
   overflow: hidden;
@@ -1274,26 +1267,16 @@ onMounted(() => {
 }
 
 .lyrics-line:hover {
-  background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.6);
 }
 
 .lyrics-line.past {
   color: rgba(255, 255, 255, 0.35);
-  font-size: 15px;
 }
 
 .lyrics-line.active {
   color: #fff;
-  font-size: 24px;
-  font-weight: 600;
-  text-shadow: 0 0 30px rgba(255, 0, 0, 0.6);
-  /* 當前行也不換行 */
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
-  /* 讓長歌詞可以橫向捲動 */
-  max-width: 100%;
+  font-weight: 500;
 }
 
 .lyrics-placeholder {
