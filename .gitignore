@@ -1,0 +1,57 @@
+# OS generated files
+.DS_Store
+thumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/*
+!build/icons
+coverage/
+__coverage__/
+
+# Cache
+.cache/
+.tmp/
+tmp/
+data/tmp/
+
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log
+npm-debug.log.*
+yarn-error.log
+*.log
+
+# FreeTube specific
+storyboards/
+dashFiles/
+static/dashFiles/
+static/storyboards/
+locale-errors.json
+csak-timelog.json
+
+# Debug
+debug/
+
+# Lefthook
+lefthook-local.yml
+
+# Claude AI
+.claude/
+
+# Lock files (use package-lock.json)
+yarn.lock
+
+# Misc
+nul
