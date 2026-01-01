@@ -333,23 +333,35 @@ if (!web) {
     startMain()
   })
 } else {
-  // Web 模式：先啟動 API server，再啟動前端
+  // Web 模式
+  const skipApiServer = process.env.SKIP_API_SERVER === 'true' || process.argv.indexOf('--no-api') !== -1
+
   console.log('\n' + '='.repeat(50))
   console.log('  FreeTube Web Development Mode')
   console.log('='.repeat(50))
-  console.log('\n  Will start:')
-  console.log('    1. Local API Server (port 3001)')
-  console.log('    2. Webpack Dev Server (port 9080)')
-  console.log('')
 
-  startApiServer()
-    .then(() => {
-      console.log('\n✅ API Server ready!')
-      console.log('\n🌐 Starting Webpack Dev Server...\n')
-      startWeb()
-    })
-    .catch((err) => {
-      console.error('Failed to start API server:', err)
-      process.exit(1)
-    })
+  if (skipApiServer) {
+    // PM2 模式：API server 由 PM2 獨立管理
+    console.log('\n  SKIP_API_SERVER enabled (PM2 mode)')
+    console.log('  Starting Webpack Dev Server only (port 9080)')
+    console.log('  API Server should be managed by PM2\n')
+    startWeb()
+  } else {
+    // 獨立模式：同時啟動 API + Web
+    console.log('\n  Will start:')
+    console.log('    1. Local API Server (port 3001)')
+    console.log('    2. Webpack Dev Server (port 9080)')
+    console.log('')
+
+    startApiServer()
+      .then(() => {
+        console.log('\n✅ API Server ready!')
+        console.log('\n🌐 Starting Webpack Dev Server...\n')
+        startWeb()
+      })
+      .catch((err) => {
+        console.error('Failed to start API server:', err)
+        process.exit(1)
+      })
+  }
 }

@@ -1167,14 +1167,14 @@ Onboarding:
   Skip for now: 先跳過
   Back: 返回
   Import Your Subscriptions: 匯入你的訂閱
-  Method 1: Google Takeout: 方法一：Google Takeout
+  "Method 1: Google Takeout": 方法一：Google Takeout
   Recommended: 推薦
   Go to Google Takeout: 前往 takeout.google.com
   Select YouTube data: 只選擇 YouTube 資料
   Download and extract: 下載並解壓縮 ZIP 檔
   Import the subscriptions file: 找到 subscriptions.json 並匯入
   Open Google Takeout: 開啟 Google Takeout
-  Method 2: Paste Channel URL: 方法二：貼上頻道網址
+  "Method 2: Paste Channel URL": 方法二：貼上頻道網址
   Paste a YouTube channel URL in the search box: 你也可以逐一貼上頻道網址
   Paste YouTube channel URL: https://youtube.com/@頻道名稱
   Add Channel: 新增頻道

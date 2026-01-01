@@ -453,7 +453,7 @@ function completeOnboarding() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -461,7 +461,7 @@ function completeOnboarding() {
 }
 
 .onboarding-dialog {
-  background: var(--bg-color, #1a1a2e);
+  background: var(--card-bg-color);
   border-radius: 16px;
   padding: 32px;
   max-width: 600px;
@@ -484,19 +484,19 @@ function completeOnboarding() {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 8px;
-  color: var(--text-color, #fff);
+  color: var(--primary-text-color);
 }
 
 .onboarding-subtitle {
   font-size: 16px;
-  color: var(--secondary-text-color, #888);
+  color: var(--secondary-text-color);
   margin-bottom: 24px;
 }
 
 .back-btn {
   background: none;
   border: none;
-  color: var(--primary-color, #f44);
+  color: var(--primary-color);
   font-size: 14px;
   cursor: pointer;
   margin-bottom: 16px;
@@ -519,24 +519,24 @@ function completeOnboarding() {
   align-items: center;
   gap: 16px;
   padding: 16px 20px;
-  border: 2px solid var(--card-border-color, #333);
+  border: 2px solid var(--scrollbar-color);
   border-radius: 12px;
-  background: var(--card-bg-color, #222);
-  color: var(--text-color, #fff);
+  background: var(--secondary-card-bg-color);
+  color: var(--primary-text-color);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
 }
 
 .onboarding-btn:hover {
-  border-color: var(--primary-color, #f44);
+  border-color: var(--primary-color);
   transform: translateY(-2px);
 }
 
 .onboarding-btn.primary {
-  background: var(--primary-color, #f44);
-  border-color: var(--primary-color, #f44);
-  color: #fff;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--text-with-main-color);
 }
 
 .onboarding-btn.primary:hover {
@@ -573,20 +573,20 @@ function completeOnboarding() {
 
 .btn-text small {
   font-size: 13px;
-  color: var(--secondary-text-color, #888);
+  color: var(--secondary-text-color);
 }
 
 .skip-btn {
   background: none;
   border: none;
-  color: var(--secondary-text-color, #888);
+  color: var(--secondary-text-color);
   font-size: 14px;
   cursor: pointer;
   margin-top: 16px;
 }
 
 .skip-btn:hover {
-  color: var(--text-color, #fff);
+  color: var(--primary-text-color);
 }
 
 /* Import Methods */
@@ -598,7 +598,7 @@ function completeOnboarding() {
 }
 
 .import-method {
-  background: var(--card-bg-color, #222);
+  background: var(--secondary-card-bg-color);
   border-radius: 12px;
   padding: 16px;
 }
@@ -606,12 +606,12 @@ function completeOnboarding() {
 .import-method h3 {
   font-size: 16px;
   margin-bottom: 12px;
-  color: var(--text-color, #fff);
+  color: var(--primary-text-color);
 }
 
 .import-method ol {
   margin: 0 0 12px 20px;
-  color: var(--secondary-text-color, #888);
+  color: var(--secondary-text-color);
   font-size: 14px;
 }
 
@@ -622,17 +622,17 @@ function completeOnboarding() {
 .url-input {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid var(--card-border-color, #333);
+  border: 2px solid var(--scrollbar-color);
   border-radius: 8px;
-  background: var(--bg-color, #1a1a2e);
-  color: var(--text-color, #fff);
+  background: var(--bg-color);
+  color: var(--primary-text-color);
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .url-input:focus {
   outline: none;
-  border-color: var(--primary-color, #f44);
+  border-color: var(--primary-color);
 }
 
 .import-actions {
@@ -654,21 +654,21 @@ function completeOnboarding() {
   align-items: center;
   gap: 8px;
   padding: 16px 12px;
-  border: 2px solid var(--card-border-color, #333);
+  border: 2px solid var(--scrollbar-color);
   border-radius: 12px;
-  background: var(--card-bg-color, #222);
-  color: var(--text-color, #fff);
+  background: var(--secondary-card-bg-color);
+  color: var(--primary-text-color);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .interest-btn:hover {
-  border-color: var(--primary-color, #f44);
+  border-color: var(--primary-color);
 }
 
 .interest-btn.selected {
-  border-color: var(--primary-color, #f44);
-  background: rgba(255, 68, 68, 0.1);
+  border-color: var(--primary-color);
+  background: var(--accent-color-opacity2);
 }
 
 .interest-icon {
@@ -702,38 +702,38 @@ function completeOnboarding() {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 2px solid var(--card-border-color, #333);
+  border: 2px solid var(--scrollbar-color);
   border-radius: 10px;
-  background: var(--card-bg-color, #222);
+  background: var(--secondary-card-bg-color);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .channel-item:hover {
-  border-color: var(--primary-color, #f44);
+  border-color: var(--primary-color);
 }
 
 .channel-item.selected {
-  border-color: var(--primary-color, #f44);
-  background: rgba(255, 68, 68, 0.1);
+  border-color: var(--primary-color);
+  background: var(--accent-color-opacity2);
 }
 
 .channel-checkbox {
   width: 24px;
   height: 24px;
-  border: 2px solid var(--card-border-color, #444);
+  border: 2px solid var(--scrollbar-color);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: var(--primary-color, #f44);
+  color: var(--primary-color);
 }
 
 .channel-item.selected .channel-checkbox {
-  background: var(--primary-color, #f44);
-  border-color: var(--primary-color, #f44);
-  color: #fff;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--text-with-main-color);
 }
 
 .channel-thumb {
@@ -741,7 +741,7 @@ function completeOnboarding() {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  background: var(--card-border-color, #333);
+  background: var(--scrollbar-color);
 }
 
 .channel-info {
@@ -753,20 +753,20 @@ function completeOnboarding() {
 .channel-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-color, #fff);
+  color: var(--primary-text-color);
 }
 
 .channel-subs {
   font-size: 12px;
-  color: var(--secondary-text-color, #888);
+  color: var(--secondary-text-color);
 }
 
 .channel-category {
   font-size: 11px;
   padding: 4px 8px;
   border-radius: 4px;
-  background: var(--primary-color, #f44);
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--text-with-main-color);
 }
 
 .recommendation-actions {

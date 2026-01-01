@@ -88,12 +88,57 @@ npm run dev
 
 | 指令 | 說明 |
 |------|------|
+| `npm start` | 同時啟動 Web 和 API 伺服器 (推薦) |
+| `npm run dev:all` | 同時啟動 Web 和 API 伺服器 |
 | `npm run dev` | 啟動 Electron 桌面應用 |
 | `npm run dev:web` | 啟動 Web 版本 (瀏覽器) |
 | `npm run dev:api` | 單獨啟動 API 伺服器 |
 | `npm run build` | 建置生產版本 |
 | `npm run lint` | 程式碼檢查 |
 | `npm run lint-fix` | 自動修復程式碼風格 |
+
+## PM2 生產部署
+
+使用 PM2 管理所有服務，方便部署到其他伺服器：
+
+```bash
+# 安裝 PM2
+npm install -g pm2
+
+# 啟動所有服務 (API + Web + Cloudflare Tunnel)
+pm2 start ecosystem.config.js
+
+# 查看狀態
+pm2 status
+
+# 查看日誌
+pm2 logs
+
+# 重啟所有服務
+pm2 restart all
+
+# 停止所有服務
+pm2 stop all
+
+# 刪除所有服務
+pm2 delete all
+```
+
+### ecosystem.config.js 服務
+
+| 服務名稱 | 說明 | 端口 |
+|----------|------|------|
+| `freetube-api` | 本地 API 伺服器 | 3001 |
+| `freetube-web` | Webpack Dev Server | 9080 |
+| `freetube-tunnel` | Cloudflare Tunnel | - |
+
+### 部署到新伺服器
+
+1. 複製專案到新伺服器
+2. 安裝依賴: `npm install && npm install -g pm2`
+3. 安裝 cloudflared (可選，用於公網訪問)
+4. 設定 Cloudflare Tunnel (參考 [CLOUDFLARE_TUNNEL_SETUP.md](docs/CLOUDFLARE_TUNNEL_SETUP.md))
+5. 啟動: `pm2 start ecosystem.config.js`
 
 ## 專案結構
 

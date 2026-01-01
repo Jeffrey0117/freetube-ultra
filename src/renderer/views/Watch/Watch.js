@@ -1,8 +1,6 @@
 import { defineComponent } from 'vue'
 import { mapActions, mapMutations } from 'vuex'
 import shaka from 'shaka-player'
-
-console.log('[DEBUG] Watch.js loaded - SUPPORTS_LOCAL_API:', process.env.SUPPORTS_LOCAL_API)
 import { Utils, YTNodes } from 'youtubei.js'
 import FtLoader from '../../components/FtLoader/FtLoader.vue'
 import FtShakaVideoPlayer from '../../components/ft-shaka-video-player/ft-shaka-video-player.vue'
@@ -73,6 +71,7 @@ export default defineComponent({
       startNextVideoInFullscreen: false,
       startNextVideoInFullwindow: false,
       startNextVideoInPip: false,
+      keepPlayerAlive: false, // 連續播放時不銷毀 player，保持 iOS 授權狀態
       isLoading: true,
       firstLoad: true,
       useTheatreMode: false,
@@ -297,15 +296,20 @@ export default defineComponent({
     async $route() {
       this.handleRouteChange()
 
-      if (this.$refs.player) {
+      // 連續播放時不銷毀 player，保持 video 元素的「用戶已授權」狀態 (iOS)
+      const keepAlive = this.keepPlayerAlive
+      if (this.$refs.player && !keepAlive) {
         await this.destroyPlayer()
       }
+      this.keepPlayerAlive = false // 重置 flag
 
       // react to route changes...
       this.videoId = this.$route.params.id
 
-      this.firstLoad = true
-      this.videoPlayerLoaded = false
+      // 如果是連續播放，不設 firstLoad=true，避免 isLoading=true 導致 player 被 unmount
+      // player 組件會通過 videoId watcher 偵測變化並重新載入影片
+      this.firstLoad = !keepAlive
+      this.videoPlayerLoaded = keepAlive ? this.videoPlayerLoaded : false
       this.errorMessage = null
       this.customErrorIcon = null
       this.activeFormat = this.defaultVideoFormat
@@ -359,7 +363,6 @@ export default defineComponent({
       // this has to be below checkIfPlaylist() as theatrePossible needs to know if there is a playlist or not
       this.setViewingModeOnFirstLoad()
 
-      console.log('[DEBUG] Decision point: SUPPORTS_LOCAL_API=', process.env.SUPPORTS_LOCAL_API, 'backendPreference=', this.backendPreference)
       if (!process.env.SUPPORTS_LOCAL_API || this.backendPreference === 'invidious') {
         this.getVideoInformationInvidious()
       } else {
@@ -400,7 +403,6 @@ export default defineComponent({
     },
 
     getVideoInformationLocal: async function () {
-      console.log('[DEBUG] getVideoInformationLocal called')
       if (this.firstLoad) {
         this.isLoading = true
       }
@@ -855,21 +857,12 @@ export default defineComponent({
     },
 
     getVideoInformationInvidious: function () {
-      console.log('[DEBUG] getVideoInformationInvidious called')
       if (this.firstLoad) {
         this.isLoading = true
       }
 
       invidiousGetVideoInformation(this.videoId)
         .then(async result => {
-          console.log('[DEBUG] getVideoInformationInvidious .then() received result:', {
-            hasError: !!result.error,
-            errorMessage: result.errorMessage,
-            liveNow: result.liveNow,
-            isPostLiveDvr: result.isPostLiveDvr,
-            adaptiveFormatsCount: result.adaptiveFormats?.length,
-            dashUrl: result.dashUrl,
-          })
           if (result.error) {
             throw new Error(result.error)
           }
@@ -1420,6 +1413,10 @@ export default defineComponent({
           if (this.watchingPlaylist) {
             this.$refs.watchVideoPlaylist.playNextVideo()
           } else {
+            // 設定 flag，讓 $route watcher 不要銷毀 player
+            // 這樣 video 元素保持不變，iOS 的「用戶已授權」狀態就不會丟失
+            this.keepPlayerAlive = true
+
             // 加上 autoplay=1 參數，告訴下一個頁面要自動播放
             this.$router.push({
               path: `/watch/${nextVideoId}`,
@@ -1589,13 +1586,10 @@ export default defineComponent({
 
       // 如果 API 返回了相對路徑的 dashUrl (來自 local-api-server)，直接使用
       // 這樣可以避免客戶端 XML 生成的問題，改用伺服器端的 DASH manifest
-      console.log('[DEBUG] createInvidiousDashManifest - result.dashUrl:', result.dashUrl)
       if (result.dashUrl && result.dashUrl.startsWith('/')) {
         const manifestUrl = `${window.location.origin}${result.dashUrl}`
-        console.log('[DEBUG] Using server-side DASH manifest:', manifestUrl)
         return manifestUrl
       }
-      console.log('[DEBUG] Falling back to local manifest generation')
 
       // If we are in Electron,
       // we can use YouTube.js' DASH manifest generator to generate the manifest.

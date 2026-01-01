@@ -2615,7 +2615,6 @@ export default defineComponent({
     // #region setup
 
     onMounted(async () => {
-      console.log('[DEBUG] ft-shaka-video-player onMounted - manifestSrc:', props.manifestSrc?.substring(0, 100), 'format:', props.format)
       const videoElement = video.value
 
       const volume = sessionStorage.getItem('volume')
@@ -3107,6 +3106,98 @@ export default defineComponent({
 
         if (wasPaused) {
           video_.pause()
+        }
+      }
+    )
+
+    // Watch for video source changes to reload the player when navigating to a new video
+    // while keeping the player alive (for iOS continuous playback support)
+    // We use a combined watcher for manifestSrc (dash/audio) and legacyFormats (legacy)
+    let previousVideoId = props.videoId
+
+    watch(
+      [() => props.manifestSrc, () => props.legacyFormats, () => props.videoId],
+      async ([newManifestSrc, newLegacyFormats, newVideoId], [oldManifestSrc, oldLegacyFormats, oldVideoId]) => {
+        // Only trigger when videoId changes and we have valid data
+        if (newVideoId === previousVideoId || !hasLoaded.value) {
+          return
+        }
+
+        const format = props.format
+        const hasValidSource = format === 'legacy'
+          ? (newLegacyFormats && newLegacyFormats.length > 0)
+          : !!newManifestSrc
+
+        if (!hasValidSource) {
+          return
+        }
+
+        previousVideoId = newVideoId
+
+        ignoreErrors = true
+        showTapToPlay.value = false
+
+        const video_ = video.value
+
+        try {
+          await player.unload()
+        } catch { }
+
+        ignoreErrors = false
+
+        // Reset hasLoaded to allow proper state management
+        hasLoaded.value = false
+
+        // For continuous playback, we want to start playing immediately
+        if (format === 'dash' || format === 'audio') {
+          player.configure(getPlayerConfig(format, defaultQuality.value === 'auto'))
+
+          try {
+            await player.load(newManifestSrc, props.startTime, props.manifestMimeType)
+
+            if (defaultQuality.value !== 'auto') {
+              const tracks = player.getVariantTracks()
+              if (tracks.length > 0) {
+                setDashQuality(defaultQuality.value)
+              }
+            }
+
+            hasLoaded.value = true
+            emit('loaded')
+
+            // Start playing for continuous playback
+            if (forceAutoplay.value) {
+              video_.muted = true // Ensure muted for autoplay
+              try {
+                await video_.play()
+              } catch {
+                // Autoplay may fail on mobile due to browser restrictions
+              }
+            }
+          } catch {
+            // Failed to load new video after source change
+            hasLoaded.value = true
+          }
+        } else {
+          // Legacy format
+          const legacyFormat = newLegacyFormats.find(format => format.qualityLabel === defaultQuality.value) || newLegacyFormats[0]
+          if (legacyFormat) {
+            activeLegacyFormat.value = legacyFormat
+            video_.src = legacyFormat.url
+            video_.currentTime = props.startTime || 0
+
+            hasLoaded.value = true
+            emit('loaded')
+
+            if (forceAutoplay.value) {
+              video_.muted = true
+              try {
+                await video_.play()
+              } catch {
+                // Autoplay may fail on mobile due to browser restrictions
+              }
+            }
+          }
         }
       }
     )
