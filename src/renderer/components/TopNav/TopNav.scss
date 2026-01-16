@@ -123,8 +123,19 @@
   margin-block: 0;
   margin-inline: 6px;
 
-  &.profiles {
+  &.rightSection {
     justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .userMenu {
+    display: flex;
+    align-items: center;
+  }
+
+  .profiles {
+    display: flex;
+    align-items: center;
   }
 
   .navSearchButton {

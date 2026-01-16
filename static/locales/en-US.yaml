@@ -768,6 +768,32 @@ Profile:
     from any other profile.
   Close Profile Dropdown: Close Profile Dropdown
   Open Profile Dropdown: Open Profile Dropdown
+  # User Profile Page additions
+  Change Avatar: Change Avatar
+  Joined: Joined
+  Subscriptions: Subscriptions
+  Playlists: Playlists
+  History: History
+  Settings: Settings
+  Watch Time: Watch Time
+  No subscriptions yet: You haven't subscribed to any channels yet
+  Discover Channels: Discover Channels
+  No playlists yet: You haven't created any playlists yet
+  Create Playlist: Create Playlist
+  No history yet: You haven't watched any videos yet
+  Start Watching: Start Watching
+  View All History: View All History
+  Account: Account
+  Change Password: Change Password
+  Update your account password: Update your account password
+  Export Data: Export Data
+  Download your data: Download all your data
+  Delete Account: Delete Account
+  Permanently delete your account: This action cannot be undone
+  Cancel: Cancel
+  Save Changes: Save Changes
+  Enter display name: Enter your display name
+  Username cannot be changed: Username cannot be changed
 #On Channel Page
 Channel:
   Subscribe: Subscribe
@@ -1295,3 +1321,80 @@ Onboarding:
   Select channels to subscribe: Select channels you'd like to follow
   Subscribe to Selected: Subscribe to Selected
   Start Without Subscribing: Start Without Subscribing
+
+# Authentication
+Auth:
+  Sign In: Sign In
+  Sign in to your account: Sign in to your account
+  Username: Username
+  Enter your username: Enter your username
+  Password: Password
+  Enter your password: Enter your password
+  Remember me: Remember me
+  Continue as Guest: Continue as Guest
+  No account?: Don't have an account?
+  Create Account: Create Account
+  Back to Sign In: Back to Sign In
+  Join FreeTube today: Join FreeTube today
+  Choose a username: Choose a username
+  Username is required: Username is required
+  Username must be at least 3 characters: Username must be at least 3 characters
+  Username must be at most 20 characters: Username must be at most 20 characters
+  Username must be 3-20 characters: Username must be 3-20 characters, letters, numbers and underscores only
+  Username can only contain letters, numbers, and underscores: Username can only contain letters, numbers, and underscores
+  Display Name: Display Name
+  Optional: (optional)
+  How others will see you: How others will see you
+  Create a password: Create a password
+  Password is required: Password is required
+  Password must be at least 6 characters: Password must be at least 6 characters
+  Confirm Password: Confirm Password
+  Confirm your password: Confirm your password
+  Please confirm your password: Please confirm your password
+  Passwords do not match: Passwords do not match
+  Weak: Weak
+  Fair: Fair
+  Good: Good
+  Strong: Strong
+  Already have an account?: Already have an account?
+  Show Password: Show password
+  Hide Password: Hide password
+
+# User Profile System
+User:
+  Login: Login
+  Logout: Logout
+  My Profile: My Profile
+  Account Settings: Account Settings
+  Switch Account: Switch Account
+  Welcome back to FreeTube: Welcome back to FreeTube
+  Username: Username
+  Password: Password
+  Enter username: Enter your username
+  Enter password: Enter your password
+  Continue as Guest: Continue as Guest
+  Or: or
+  No account yet: Don't have an account?
+  Create Account: Create Account
+  Or login with existing account: Or login with existing account
+  Join FreeTube today: Join FreeTube today
+  Choose a username: Choose a username
+  Enter display name: Enter your display name
+  Create a password: Create a password
+  Confirm your password: Confirm your password
+  Username requirements: 3-20 characters, letters, numbers, underscores and hyphens only
+  Display Name: Display Name
+  Optional: optional
+  Confirm Password: Confirm Password
+  Already have account: Already have an account?
+  Current Account: Current Account
+  Other Accounts: Other Accounts
+  No other accounts: No other accounts available
+  Last login: Last login
+  Enter password for: Enter password for
+  Add Another Account: Add Another Account
+  Syncing: Syncing...
+  Synced: Synced
+  Sync Failed: Sync Failed
+
+# User Profile Page - additional entries are in the Profile section above

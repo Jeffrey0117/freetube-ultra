@@ -12,6 +12,7 @@ import utils from './modules/utils'
 import player from './modules/player'
 import musicMode from './modules/musicMode'
 import onboarding from './modules/onboarding'
+import user from './modules/user'
 
 export default createStore({
   modules: {
@@ -26,6 +27,7 @@ export default createStore({
     player,
     musicMode,
     onboarding,
+    user,
   },
 
   // Detects unsafe changes to the store state e.g. outside of mutations

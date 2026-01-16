@@ -952,6 +952,32 @@ Profile:
   Profile Name: 設定檔名稱
   Edit Profile Name: 修改設定檔名稱
   Create Profile Name: 建立設定檔名稱
+  # 會員個人檔案頁面
+  Change Avatar: 更換頭像
+  Joined: 加入於
+  Subscriptions: 訂閱
+  Playlists: 播放清單
+  History: 歷史記錄
+  Settings: 設定
+  Watch Time: 觀看時間
+  No subscriptions yet: 您尚未訂閱任何頻道
+  Discover Channels: 探索頻道
+  No playlists yet: 您尚未建立任何播放清單
+  Create Playlist: 建立播放清單
+  No history yet: 您尚未觀看任何影片
+  Start Watching: 開始觀看
+  View All History: 查看全部歷史
+  Account: 帳戶
+  Change Password: 更改密碼
+  Update your account password: 更新您的帳戶密碼
+  Export Data: 匯出資料
+  Download your data: 下載您的所有資料
+  Delete Account: 刪除帳戶
+  Permanently delete your account: 此操作無法撤銷
+  Cancel: 取消
+  Save Changes: 儲存變更
+  Enter display name: 輸入顯示名稱
+  Username cannot be changed: 用戶名無法更改
 The playlist has been reversed: 播放清單已反轉
 A new blog is now available, {blogTitle}. Click to view more: 已有新的部落格文章，{blogTitle}。點擊以檢視更多
 Download From Site: 從網站下載
@@ -1201,3 +1227,78 @@ Onboarding:
   Select channels to subscribe: 選擇想要訂閱的頻道
   Subscribe to Selected: 訂閱已選頻道
   Start Without Subscribing: 不訂閱直接開始
+
+# 認證
+Auth:
+  Sign In: 登入
+  Sign in to your account: 登入您的帳戶
+  Username: 用戶名
+  Enter your username: 輸入您的用戶名
+  Password: 密碼
+  Enter your password: 輸入您的密碼
+  Remember me: 記住我
+  Continue as Guest: 以訪客身份繼續
+  No account?: 還沒有帳戶？
+  Create Account: 建立帳戶
+  Back to Sign In: 返回登入
+  Join FreeTube today: 立即加入 FreeTube
+  Choose a username: 選擇一個用戶名
+  Username is required: 用戶名為必填
+  Username must be at least 3 characters: 用戶名至少需要 3 個字元
+  Username must be at most 20 characters: 用戶名最多 20 個字元
+  Username must be 3-20 characters: 用戶名需為 3-20 個字元，只能包含字母、數字和底線
+  Username can only contain letters, numbers, and underscores: 用戶名只能包含字母、數字和底線
+  Display Name: 顯示名稱
+  Optional: （選填）
+  How others will see you: 其他人看到的名稱
+  Create a password: 建立密碼
+  Password is required: 密碼為必填
+  Password must be at least 6 characters: 密碼至少需要 6 個字元
+  Confirm Password: 確認密碼
+  Confirm your password: 再次輸入密碼
+  Please confirm your password: 請確認您的密碼
+  Passwords do not match: 密碼不一致
+  Weak: 弱
+  Fair: 普通
+  Good: 良好
+  Strong: 強
+  Already have an account?: 已有帳戶？
+  Show Password: 顯示密碼
+  Hide Password: 隱藏密碼
+
+# 會員系統
+User:
+  Login: 登入
+  Logout: 登出
+  My Profile: 我的個人檔案
+  Account Settings: 帳戶設定
+  Switch Account: 切換帳戶
+  Welcome back to FreeTube: 歡迎回到 FreeTube
+  Username: 用戶名
+  Password: 密碼
+  Enter username: 輸入用戶名
+  Enter password: 輸入密碼
+  Continue as Guest: 以訪客身分繼續
+  Or: 或
+  No account yet: 還沒有帳戶？
+  Create Account: 建立帳戶
+  Or login with existing account: 或使用現有帳戶登入
+  Join FreeTube today: 立即加入 FreeTube
+  Choose a username: 選擇用戶名
+  Enter display name: 輸入顯示名稱
+  Create a password: 建立密碼
+  Confirm your password: 確認您的密碼
+  Username requirements: 3-20 個字元，僅限字母、數字、底線和連字號
+  Display Name: 顯示名稱
+  Optional: 選填
+  Confirm Password: 確認密碼
+  Already have account: 已有帳戶？
+  Current Account: 目前帳戶
+  Other Accounts: 其他帳戶
+  No other accounts: 沒有其他帳戶
+  Last login: 最後登入
+  Enter password for: 請輸入密碼
+  Add Another Account: 新增其他帳戶
+  Syncing: 同步中...
+  Synced: 已同步
+  Sync Failed: 同步失敗

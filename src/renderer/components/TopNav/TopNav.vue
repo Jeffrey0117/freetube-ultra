@@ -114,7 +114,10 @@
         </button>
       </div>
     </div>
-    <FtProfileSelector class="side profiles" />
+    <div class="side rightSection">
+      <FtUserMenu class="userMenu" />
+      <FtProfileSelector class="profiles" />
+    </div>
   </nav>
 </template>
 
@@ -127,6 +130,7 @@ import { useRoute, useRouter } from 'vue-router'
 import FtInput from '../FtInput/FtInput.vue'
 import FtProfileSelector from '../FtProfileSelector/FtProfileSelector.vue'
 import FtIconButton from '../FtIconButton/FtIconButton.vue'
+import FtUserMenu from '../ft-user-menu/ft-user-menu.vue'
 
 import store from '../../store/index'
 

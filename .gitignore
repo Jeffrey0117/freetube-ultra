@@ -23,6 +23,8 @@ __coverage__/
 .tmp/
 tmp/
 data/tmp/
+.pytest_cache/
+__pycache__/
 
 # Dependencies
 node_modules/
@@ -32,6 +34,18 @@ npm-debug.log
 npm-debug.log.*
 yarn-error.log
 *.log
+
+# Environment variables & secrets
+.env
+.env.*
+.env.local
+.env.*.local
+*.pem
+*.key
+*credentials*
+*secret*
+api_key*
+!**/locales/*.yaml
 
 # FreeTube specific
 storyboards/
@@ -55,3 +69,7 @@ yarn.lock
 
 # Misc
 nul
+*.bak
+*.backup
+*.temp
+*.tmp

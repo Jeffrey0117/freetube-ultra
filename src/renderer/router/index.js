@@ -17,6 +17,9 @@ import Post from '../views/Post.vue'
 import MusicPlayer from '../components/MusicPlayer/MusicPlayer.vue'
 import MusicHome from '../views/Music/MusicHome.vue'
 
+// 會員系統相關頁面
+import Profile from '../views/Profile/Profile.vue'
+
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
@@ -207,6 +210,44 @@ const router = createRouter({
         title: 'Artist'
       },
       component: Channel // 暫時使用 Channel，可加上音樂模式專用 UI
+    },
+
+    // ==================== 會員系統路由 ====================
+    {
+      path: '/profile',
+      name: 'profile',
+      meta: {
+        title: 'My Profile',
+        requiresAuth: true
+      },
+      component: Profile
+    },
+    {
+      path: '/login',
+      name: 'login',
+      meta: {
+        title: 'Login'
+      },
+      // 使用動態導入以減少初始載入時間
+      component: () => import('../views/Login/Login.vue')
+    },
+    {
+      path: '/register',
+      name: 'register',
+      meta: {
+        title: 'Register'
+      },
+      // 使用動態導入以減少初始載入時間
+      component: () => import('../views/Register/Register.vue')
+    },
+    {
+      path: '/switch-user',
+      name: 'switchUser',
+      meta: {
+        title: 'Switch Account'
+      },
+      // 使用動態導入以減少初始載入時間
+      component: () => import('../views/SwitchUser/SwitchUser.vue')
     }
   ],
   scrollBehavior(to, from, savedPosition) {

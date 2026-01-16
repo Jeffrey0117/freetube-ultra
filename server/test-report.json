@@ -1,0 +1,81 @@
+{
+  "files": [
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\auth.integration.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\cache\\cache.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\integration.test.js",
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\proxy.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\routes\\auth.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\routes\\routes.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\services\\userService.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\server\\utils\\utils.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\src\\renderer\\helpers\\auth.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "file": "C:\\Users\\jeffb\\Desktop\\code\\FreeTube\\src\\renderer\\store\\modules\\user.test.js",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  ],
+  "summary": {
+    "total": 33,
+    "passed": 33,
+    "failed": 0,
+    "skipped": 0,
+    "duration": 24295
+  }
+}

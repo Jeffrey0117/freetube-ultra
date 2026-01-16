@@ -7,6 +7,7 @@ const https = require('https')
 const fs = require('fs')
 const path = require('path')
 const config = require('../config')
+const { handleAuthRoutes } = require('./auth')
 
 // === 快取設定 ===
 const LYRICS_CACHE_DIR = config.cache.lyricsDir
@@ -116,6 +117,7 @@ function parseDuration(durationStr) {
  * 轉換搜尋結果為 Invidious 格式
  */
 function convertSearchResults(results) {
+  if (!results || !Array.isArray(results)) return []
   return results.map(item => {
     if (item.type === 'Video') {
       const videoId = item.id
@@ -745,6 +747,15 @@ async function handleChannelSubResource(res, channel, channelId, subResource, qu
  */
 async function handleRequest(context) {
   const { req, res, path, query, innertube, innertubeAndroid } = context
+  const method = req.method
+
+  // === 處理認證 API 路由 ===
+  if (path.startsWith('/api/v1/auth/')) {
+    const authHandled = await handleAuthRoutes({ req, res, path, method })
+    if (authHandled !== false) {
+      return true
+    }
+  }
 
   // === Thumbnail 代理 (影片) ===
   const thumbMatch = path.match(/^\/(vi|vi_webp)\/([a-zA-Z0-9_-]+)\/(.+)$/)

@@ -179,6 +179,13 @@ const dataReady = ref(false)
 onMounted(async () => {
   await store.dispatch('grabUserSettings')
 
+  // 初始化用戶系統，恢復已登入用戶的 session
+  try {
+    await store.dispatch('user/initializeUser')
+  } catch (error) {
+    console.error('Failed to initialize user session:', error)
+  }
+
   updateTheme()
 
   await store.dispatch('fetchInvidiousInstancesFromFile')

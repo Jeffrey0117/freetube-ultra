@@ -377,6 +377,7 @@ function loadDatastores() {
     db.playlists.loadDatabaseAsync(),
     db.searchHistory.loadDatabaseAsync(),
     db.subscriptionCache.loadDatabaseAsync(),
+    db.users.loadDatabaseAsync(),
   ])
 }
 
@@ -388,7 +389,101 @@ function compactAllDatastores() {
     db.playlists.compactDatafileAsync(),
     db.searchHistory.compactDatafileAsync(),
     db.subscriptionCache.compactDatafileAsync(),
+    db.users.compactDatafileAsync(),
   ])
+}
+
+// 用戶類別 - 會員系統資料處理
+class Users {
+  /**
+   * 取得所有用戶
+   * @returns {Promise<Array>} 用戶列表
+   */
+  static find() {
+    return db.users.findAsync({}).sort({ createdAt: -1 })
+  }
+
+  /**
+   * 按 ID 查詢用戶
+   * @param {string} id - 用戶 ID
+   * @returns {Promise<Object|null>} 用戶資料
+   */
+  static findById(id) {
+    return db.users.findOneAsync({ _id: id })
+  }
+
+  /**
+   * 按用戶名查詢用戶
+   * @param {string} username - 用戶名
+   * @returns {Promise<Object|null>} 用戶資料
+   */
+  static findByUsername(username) {
+    return db.users.findOneAsync({ username: username.toLowerCase() })
+  }
+
+  /**
+   * 建立新用戶
+   * @param {Object} user - 用戶資料
+   * @returns {Promise<Object>} 新建立的用戶
+   */
+  static create(user) {
+    return db.users.insertAsync(user)
+  }
+
+  /**
+   * 更新用戶資料（若不存在則建立）
+   * @param {Object} user - 用戶資料
+   * @returns {Promise<Object>} 更新結果
+   */
+  static upsert(user) {
+    return db.users.updateAsync({ _id: user._id }, user, { upsert: true })
+  }
+
+  /**
+   * 刪除用戶
+   * @param {string} id - 用戶 ID
+   * @returns {Promise<number>} 刪除的文件數量
+   */
+  static delete(id) {
+    return db.users.removeAsync({ _id: id })
+  }
+
+  /**
+   * 更新最後登入時間
+   * @param {string} id - 用戶 ID
+   * @returns {Promise<Object>} 更新結果
+   */
+  static updateLastLogin(id) {
+    return db.users.updateAsync(
+      { _id: id },
+      { $set: { lastLoginAt: Date.now() } }
+    )
+  }
+
+  /**
+   * 更新用戶統計數據
+   * @param {string} id - 用戶 ID
+   * @param {Object} stats - 統計數據物件
+   * @returns {Promise<Object>} 更新結果
+   */
+  static updateStats(id, stats) {
+    const updateFields = {}
+    for (const [key, value] of Object.entries(stats)) {
+      updateFields[`stats.${key}`] = value
+    }
+    return db.users.updateAsync(
+      { _id: id },
+      { $set: updateFields }
+    )
+  }
+
+  /**
+   * 刪除所有用戶（用於測試或重置）
+   * @returns {Promise<number>} 刪除的文件數量
+   */
+  static deleteAll() {
+    return db.users.removeAsync({}, { multi: true })
+  }
 }
 
 export {
@@ -398,6 +493,7 @@ export {
   Playlists as playlists,
   SearchHistory as searchHistory,
   SubscriptionCache as subscriptionCache,
+  Users as users,
 
   loadDatastores,
   compactAllDatastores,

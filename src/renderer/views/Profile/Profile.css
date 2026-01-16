@@ -1,0 +1,787 @@
+/**
+ * Profile.css - 個人檔案頁面樣式
+ *
+ * 使用 FreeTube CSS 變數確保主題一致性
+ * 響應式設計支援桌面和行動裝置
+ */
+
+/* ============ 頁面容器 ============ */
+
+.profile-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ============ 頁面頭部 ============ */
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background-color: var(--card-bg-color);
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+/* 頭像區域 */
+.avatar-section {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.change-avatar-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid var(--card-bg-color);
+  background-color: var(--primary-color);
+  color: var(--text-with-main-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.change-avatar-btn:hover {
+  transform: scale(1.1);
+  filter: brightness(1.1);
+}
+
+.hidden-input {
+  display: none;
+}
+
+/* 用戶資訊 */
+.user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.display-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary-text-color);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.username {
+  font-size: 16px;
+  color: var(--secondary-text-color);
+}
+
+.join-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+  margin-top: 4px;
+}
+
+/* 編輯按鈕 */
+.edit-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid var(--scrollbar-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary-text-color);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-profile-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background-color: var(--accent-color-opacity2);
+}
+
+/* ============ 統計數據卡片 ============ */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  position: relative;
+  padding: 20px;
+  background-color: var(--card-bg-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-value {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary-text-color);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
+.stat-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 24px;
+  color: var(--primary-color);
+  opacity: 0.3;
+}
+
+/* ============ Tab 導航 ============ */
+
+.tab-navigation {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background-color: var(--secondary-card-bg-color);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.tab-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--secondary-text-color);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  color: var(--primary-text-color);
+  background-color: var(--scrollbar-color);
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  background-color: var(--card-bg-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
+/* ============ Tab 內容區域 ============ */
+
+.tab-content {
+  background-color: var(--card-bg-color);
+  border-radius: 12px;
+  padding: 24px;
+  min-height: 400px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 空狀態 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 64px;
+  color: var(--scrollbar-color);
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: var(--secondary-text-color);
+  margin-bottom: 16px;
+}
+
+.action-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--primary-color);
+  color: var(--text-with-main-color);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.action-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* ============ 訂閱列表 ============ */
+
+.subscription-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.subscription-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--secondary-card-bg-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.subscription-item:hover {
+  background-color: var(--scrollbar-color);
+}
+
+.channel-thumbnail {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--scrollbar-color);
+}
+
+.channel-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============ 播放清單網格 ============ */
+
+.playlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.playlist-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: var(--secondary-card-bg-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.playlist-card:hover {
+  transform: translateY(-2px);
+  background-color: var(--scrollbar-color);
+}
+
+.playlist-thumbnail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  border-radius: 8px;
+  color: white;
+  font-size: 32px;
+}
+
+.video-count {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.playlist-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============ 歷史列表 ============ */
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background-color: var(--secondary-card-bg-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.history-item:hover {
+  background-color: var(--scrollbar-color);
+}
+
+.video-thumbnail-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  width: 160px;
+  height: 90px;
+}
+
+.video-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  background-color: var(--scrollbar-color);
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  padding: 2px 6px;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.video-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.video-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--primary-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.video-channel {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.watched-at {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin-top: auto;
+}
+
+.view-all-btn {
+  align-self: center;
+  margin-top: 16px;
+  padding: 10px 24px;
+  border: 2px solid var(--scrollbar-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary-text-color);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-all-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* ============ 設定區域 ============ */
+
+.settings-section {
+  max-width: 600px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary-text-color);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--scrollbar-color);
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--scrollbar-color);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--primary-text-color);
+}
+
+.setting-description {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+.setting-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--secondary-card-bg-color);
+  color: var(--primary-text-color);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.setting-btn:hover {
+  background-color: var(--scrollbar-color);
+}
+
+.setting-item.danger .setting-label {
+  color: #f44336;
+}
+
+.setting-btn.danger {
+  color: #f44336;
+}
+
+.setting-btn.danger:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+/* ============ Modal ============ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-dialog {
+  width: 90%;
+  max-width: 480px;
+  background-color: var(--card-bg-color);
+  border-radius: 16px;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--scrollbar-color);
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-text-color);
+  margin: 0;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--secondary-text-color);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.modal-close:hover {
+  background-color: var(--scrollbar-color);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-text-color);
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--scrollbar-color);
+  border-radius: 8px;
+  background-color: var(--bg-color);
+  color: var(--primary-text-color);
+  font-size: 15px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin-top: 6px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--scrollbar-color);
+  background-color: var(--secondary-card-bg-color);
+}
+
+.btn-secondary,
+.btn-primary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary {
+  background-color: var(--scrollbar-color);
+  color: var(--primary-text-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-card-bg-color);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--text-with-main-color);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+/* ============ 響應式設計 ============ */
+
+@media only screen and (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media only screen and (max-width: 680px) {
+  .profile-page {
+    padding: 12px;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .user-info {
+    align-items: center;
+  }
+
+  .display-name {
+    font-size: 24px;
+  }
+
+  .edit-profile-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .tab-navigation {
+    overflow-x: auto;
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .tab-button {
+    padding: 10px 12px;
+    flex-shrink: 0;
+  }
+
+  .tab-label {
+    display: none;
+  }
+
+  .tab-content {
+    padding: 16px;
+  }
+
+  .subscription-list {
+    grid-template-columns: 1fr;
+  }
+
+  .playlist-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .history-item {
+    flex-direction: column;
+  }
+
+  .video-thumbnail-wrapper {
+    width: 100%;
+    height: 180px;
+  }
+
+  .modal-dialog {
+    width: 95%;
+    margin: 0 auto;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stat-icon {
+    display: none;
+  }
+
+  .playlist-grid {
+    grid-template-columns: 1fr;
+  }
+}
