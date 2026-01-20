@@ -92,6 +92,9 @@ const showFamilyFriendlyOnly = computed(() => store.getters.getShowFamilyFriendl
 /** @type {import('vue').ComputedRef<boolean>} */
 const rememberSearchHistory = computed(() => store.getters.getRememberSearchHistory)
 
+/** @type {import('vue').ComputedRef<boolean>} */
+const useYouTubeCookie = computed(() => store.getters['youtubeAuth/isYouTubeConnected'])
+
 watch(route, () => {
   const query_ = route.params.query.trim()
   let features = route.query.features
@@ -196,7 +199,8 @@ async function performSearchLocal(payload) {
     const { results, continuationData } = await getLocalSearchResults(
       payload.query,
       payload.searchSettings,
-      showFamilyFriendlyOnly.value
+      showFamilyFriendlyOnly.value,
+      useYouTubeCookie.value
     )
 
     apiUsed.value = 'local'

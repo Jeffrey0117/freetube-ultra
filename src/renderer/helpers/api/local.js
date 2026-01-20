@@ -11,6 +11,7 @@ import {
   getChannelPlaylistId,
   getRelativeTimeFromDate,
 } from '../utils'
+import { getStoredYouTubeCookie, getAuthStatus } from '../youtube-cookie'
 
 const TRACKING_PARAM_NAMES = [
   'utm_source',
@@ -86,9 +87,10 @@ if (process.env.SUPPORTS_LOCAL_API) {
  * @param {boolean} options.safetyMode whether to hide mature content
  * @param {import('youtubei.js').ClientType} options.clientType use an alterate client
  * @param {boolean} options.generateSessionLocally generate the session locally or let YouTube generate it (local is faster, remote is more accurate)
+ * @param {boolean} options.useYouTubeCookie whether to use stored YouTube cookie for personalized results
  * @returns the Innertube instance
  */
-async function createInnertube({ withPlayer = false, location = undefined, safetyMode = false, clientType = undefined, generateSessionLocally = true } = {}) {
+async function createInnertube({ withPlayer = false, location = undefined, safetyMode = false, clientType = undefined, generateSessionLocally = true, useYouTubeCookie = false } = {}) {
   let cache
   if (withPlayer) {
     if (process.env.IS_ELECTRON) {
@@ -98,7 +100,8 @@ async function createInnertube({ withPlayer = false, location = undefined, safet
     }
   }
 
-  return await Innertube.create({
+  // 準備 Innertube 配置
+  const config = {
     // This setting is enabled by default and results in YouTube.js reusing the same session across different Innertube instances.
     // That behavior is highly undesirable for FreeTube, as we want to create a new session every time to limit tracking.
     enable_session_cache: false,
@@ -156,7 +159,25 @@ async function createInnertube({ withPlayer = false, location = undefined, safet
       },
     cache,
     generate_session_locally: !!generateSessionLocally
-  })
+  }
+
+  // 如果啟用 YouTube Cookie 認證，嘗試取得並加入 cookie
+  if (useYouTubeCookie) {
+    try {
+      const authStatus = getAuthStatus()
+      if (authStatus?.isEnabled && authStatus?.isConnected) {
+        const cookie = await getStoredYouTubeCookie()
+        if (cookie) {
+          config.cookie = cookie
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load YouTube cookie:', error)
+      // 繼續使用無 cookie 的模式
+    }
+  }
+
+  return await Innertube.create(config)
 }
 
 /** @type {Innertube | null} */
@@ -404,9 +425,10 @@ export async function getLocalTrending(location, tab) {
  * @param {string} query
  * @param {object} filters
  * @param {boolean} safetyMode
+ * @param {boolean} useYouTubeCookie - 是否使用 YouTube Cookie 獲取個人化結果
  */
-export async function getLocalSearchResults(query, filters, safetyMode) {
-  const innertube = await createInnertube({ safetyMode })
+export async function getLocalSearchResults(query, filters, safetyMode, useYouTubeCookie = false) {
+  const innertube = await createInnertube({ safetyMode, useYouTubeCookie })
   const response = await innertube.search(query, convertSearchFilters(filters))
 
   return handleSearchResponse(response)

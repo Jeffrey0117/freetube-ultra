@@ -186,6 +186,13 @@ onMounted(async () => {
     console.error('Failed to initialize user session:', error)
   }
 
+  // 初始化 YouTube Cookie 認證狀態
+  try {
+    await store.dispatch('youtubeAuth/initializeYouTubeAuth')
+  } catch (error) {
+    console.error('Failed to initialize YouTube auth:', error)
+  }
+
   updateTheme()
 
   await store.dispatch('fetchInvidiousInstancesFromFile')

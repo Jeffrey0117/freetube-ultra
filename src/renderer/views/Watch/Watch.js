@@ -338,7 +338,9 @@ export default defineComponent({
   },
   created: function () {
     this.videoId = this.$route.params.id
+    console.log('[DEBUG Watch created] defaultVideoFormat:', this.defaultVideoFormat)
     this.activeFormat = this.defaultVideoFormat
+    console.log('[DEBUG Watch created] activeFormat set to:', this.activeFormat)
     // So that the value for this session remains unchanged even if setting changed
     this.autoplayNextRecommendedVideo = this.autoplayNextRecommendedVideoByDefault
     this.autoplayNextPlaylistVideo = this.autoplayNextPlaylistVideoByDefault
@@ -1071,6 +1073,12 @@ export default defineComponent({
             console.log('[DEBUG Watch] About to call createInvidiousDashManifest, result.dashUrl:', result.dashUrl)
             this.manifestSrc = await this.createInvidiousDashManifest(result)
             console.log('[DEBUG Watch] manifestSrc set to:', this.manifestSrc?.substring(0, 100))
+            console.log('[DEBUG Watch] activeFormat before:', this.activeFormat)
+            // Ensure activeFormat is 'dash' when using DASH manifest
+            if (this.activeFormat === 'legacy') {
+              this.activeFormat = 'dash'
+              console.log('[DEBUG Watch] activeFormat changed to dash')
+            }
             this.manifestMimeType = MANIFEST_TYPE_DASH
           }
 

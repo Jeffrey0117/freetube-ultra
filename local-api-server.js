@@ -12,6 +12,62 @@ const { Innertube, ClientType } = require('youtubei.js')
 
 const PORT = process.env.PORT || 3001
 
+// === YouTube Cookie 支援 ===
+function loadYouTubeCookie() {
+  // 1. 從環境變數讀取
+  if (process.env.YOUTUBE_COOKIE) {
+    console.log('[COOKIE] Loaded from environment variable')
+    return parseNetscapeCookie(process.env.YOUTUBE_COOKIE)
+  }
+
+  // 2. 從 .env.local 讀取
+  const envLocalPath = path.join(__dirname, '.env.local')
+  if (fs.existsSync(envLocalPath)) {
+    const content = fs.readFileSync(envLocalPath, 'utf-8')
+    const match = content.match(/YOUTUBE_COOKIE="([^"]+)"/s)
+    if (match) {
+      console.log('[COOKIE] Loaded from .env.local')
+      return parseNetscapeCookie(match[1])
+    }
+  }
+
+  console.log('[COOKIE] No cookie found, running without authentication')
+  return null
+}
+
+// 解析 Netscape Cookie 格式為標準 Cookie 字串
+function parseNetscapeCookie(cookieString) {
+  if (!cookieString) return null
+
+  const cookies = {}
+  const lines = cookieString.split('\n')
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    // 跳過註釋和空行
+    if (!trimmed || trimmed.startsWith('#')) continue
+
+    const parts = trimmed.split('\t')
+    if (parts.length >= 7) {
+      const name = parts[5]
+      const value = parts[6]
+      if (name && value !== undefined) {
+        cookies[name] = value
+      }
+    }
+  }
+
+  // 轉換為標準 Cookie 字串格式
+  const cookieStr = Object.entries(cookies)
+    .map(([name, value]) => `${name}=${value}`)
+    .join('; ')
+
+  console.log(`[COOKIE] Parsed ${Object.keys(cookies).length} cookies`)
+  return cookieStr
+}
+
+const YOUTUBE_COOKIE = loadYouTubeCookie()
+
 // === Lyrics Cache ===
 const LYRICS_CACHE_DIR = path.join(os.homedir(), '.freetube-cache', 'lyrics')
 const lyricsCache = new Map() // In-memory cache for fast access
@@ -126,19 +182,27 @@ let innertubeAndroid = null
 async function initInnertube() {
   console.log('Initializing YouTube.js...')
 
-  // 一般用途 (搜尋等)
-  innertube = await Innertube.create({
+  // 基礎設定
+  const baseConfig = {
     lang: 'zh-TW',
     location: 'TW',
     retrieve_player: false,
-  })
+  }
 
-  // Android client - URLs 不需要解密
+  // 如果有 cookie，加入設定
+  if (YOUTUBE_COOKIE) {
+    baseConfig.cookie = YOUTUBE_COOKIE
+    console.log('[INNERTUBE] Using authenticated session')
+  }
+
+  // 一般用途 (搜尋等)
+  innertube = await Innertube.create(baseConfig)
+
+  // Android client - 需要 retrieve_player: true 才能取得高畫質串流
   innertubeAndroid = await Innertube.create({
-    lang: 'zh-TW',
-    location: 'TW',
+    ...baseConfig,
     client_type: ClientType.ANDROID,
-    retrieve_player: false,
+    retrieve_player: true,  // 覆蓋 baseConfig，取得完整串流資料
   })
 
   console.log('YouTube.js ready!')
@@ -180,51 +244,132 @@ function generateDashManifest(videoId, adaptiveFormats, duration) {
   const videoFormats = adaptiveFormats.filter(f => f.mime_type?.startsWith('video/'))
   const audioFormats = adaptiveFormats.filter(f => f.mime_type?.startsWith('audio/'))
 
+  // 取得 init 和 index range (支援兩種格式：字串 "0-741" 或物件 {start: 0, end: 741})
+  function getRange(format, type) {
+    const rangeKey = type === 'init' ? 'init_range' : 'index_range'
+    const shortKey = type === 'init' ? 'init' : 'index'
+
+    // 嘗試物件格式 (init_range/index_range)
+    if (format[rangeKey]?.start !== undefined) {
+      return `${format[rangeKey].start}-${format[rangeKey].end}`
+    }
+    // 嘗試字串格式 (init/index)
+    if (format[shortKey]) {
+      return format[shortKey]
+    }
+    return '0-0'
+  }
+
   let adaptationSets = ''
 
-  // 視頻 AdaptationSet
+  // 視頻 AdaptationSet - 按 container type 分組
   if (videoFormats.length > 0) {
-    let representations = ''
-    for (const format of videoFormats) {
-      const url = toProxyUrl(format.url)
-      const mimeType = format.mime_type?.split(';')[0] || 'video/mp4'
-      const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
+    // 分組：video/mp4 (AVC) 和 video/webm (VP9)
+    const mp4Video = videoFormats.filter(f => f.mime_type?.includes('video/mp4'))
+    const webmVideo = videoFormats.filter(f => f.mime_type?.includes('video/webm'))
 
-      representations += `
+    // MP4 視頻 (AVC/H.264)
+    if (mp4Video.length > 0) {
+      let representations = ''
+      for (const format of mp4Video) {
+        const url = toProxyUrl(format.url)
+        const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
+        const initRange = getRange(format, 'init')
+        const indexRange = getRange(format, 'index')
+
+        representations += `
         <Representation id="${format.itag}" bandwidth="${format.bitrate || 0}" width="${format.width || 0}" height="${format.height || 0}" codecs="${codecs}">
           <BaseURL>${escapeXml(url)}</BaseURL>
-          <SegmentBase indexRange="${format.index_range?.start || 0}-${format.index_range?.end || 0}">
-            <Initialization range="${format.init_range?.start || 0}-${format.init_range?.end || 0}"/>
+          <SegmentBase indexRange="${indexRange}">
+            <Initialization range="${initRange}"/>
           </SegmentBase>
         </Representation>`
-    }
+      }
 
-    adaptationSets += `
+      adaptationSets += `
     <AdaptationSet mimeType="video/mp4" subsegmentAlignment="true">
       ${representations}
     </AdaptationSet>`
-  }
-
-  // 音頻 AdaptationSet
-  if (audioFormats.length > 0) {
-    let representations = ''
-    for (const format of audioFormats) {
-      const url = toProxyUrl(format.url)
-      const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
-
-      representations += `
-        <Representation id="${format.itag}" bandwidth="${format.bitrate || 0}" codecs="${codecs}">
-          <BaseURL>${escapeXml(url)}</BaseURL>
-          <SegmentBase indexRange="${format.index_range?.start || 0}-${format.index_range?.end || 0}">
-            <Initialization range="${format.init_range?.start || 0}-${format.init_range?.end || 0}"/>
-          </SegmentBase>
-        </Representation>`
     }
 
-    adaptationSets += `
+    // WebM 視頻 (VP9)
+    if (webmVideo.length > 0) {
+      let representations = ''
+      for (const format of webmVideo) {
+        const url = toProxyUrl(format.url)
+        const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
+        const initRange = getRange(format, 'init')
+        const indexRange = getRange(format, 'index')
+
+        representations += `
+        <Representation id="${format.itag}" bandwidth="${format.bitrate || 0}" width="${format.width || 0}" height="${format.height || 0}" codecs="${codecs}">
+          <BaseURL>${escapeXml(url)}</BaseURL>
+          <SegmentBase indexRange="${indexRange}">
+            <Initialization range="${initRange}"/>
+          </SegmentBase>
+        </Representation>`
+      }
+
+      adaptationSets += `
+    <AdaptationSet mimeType="video/webm" subsegmentAlignment="true">
+      ${representations}
+    </AdaptationSet>`
+    }
+  }
+
+  // 音頻 AdaptationSet - 按 container type 分組
+  if (audioFormats.length > 0) {
+    // 分組：audio/mp4 (AAC) 和 audio/webm (opus)
+    const mp4Audio = audioFormats.filter(f => f.mime_type?.includes('audio/mp4'))
+    const webmAudio = audioFormats.filter(f => f.mime_type?.includes('audio/webm'))
+
+    // MP4 音頻 (AAC)
+    if (mp4Audio.length > 0) {
+      let representations = ''
+      for (const format of mp4Audio) {
+        const url = toProxyUrl(format.url)
+        const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
+        const initRange = getRange(format, 'init')
+        const indexRange = getRange(format, 'index')
+
+        representations += `
+        <Representation id="${format.itag}" bandwidth="${format.bitrate || 0}" codecs="${codecs}">
+          <BaseURL>${escapeXml(url)}</BaseURL>
+          <SegmentBase indexRange="${indexRange}">
+            <Initialization range="${initRange}"/>
+          </SegmentBase>
+        </Representation>`
+      }
+
+      adaptationSets += `
     <AdaptationSet mimeType="audio/mp4" subsegmentAlignment="true">
       ${representations}
     </AdaptationSet>`
+    }
+
+    // WebM 音頻 (opus)
+    if (webmAudio.length > 0) {
+      let representations = ''
+      for (const format of webmAudio) {
+        const url = toProxyUrl(format.url)
+        const codecs = format.mime_type?.match(/codecs="([^"]+)"/)?.[1] || ''
+        const initRange = getRange(format, 'init')
+        const indexRange = getRange(format, 'index')
+
+        representations += `
+        <Representation id="${format.itag}" bandwidth="${format.bitrate || 0}" codecs="${codecs}">
+          <BaseURL>${escapeXml(url)}</BaseURL>
+          <SegmentBase indexRange="${indexRange}">
+            <Initialization range="${initRange}"/>
+          </SegmentBase>
+        </Representation>`
+      }
+
+      adaptationSets += `
+    <AdaptationSet mimeType="audio/webm" subsegmentAlignment="true">
+      ${representations}
+    </AdaptationSet>`
+    }
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -1062,6 +1207,18 @@ const server = http.createServer(async (req, res) => {
       const suggestions = await innertube.getSearchSuggestions(q)
       res.writeHead(200)
       res.end(JSON.stringify({ query: q, suggestions: suggestions }))
+      return
+    }
+
+    // Storyboards 端點 (目前返回空，避免播放器報錯)
+    const storyboardsMatch = path.match(/^\/api\/v1\/storyboards\/([a-zA-Z0-9_-]+)/)
+    if (storyboardsMatch) {
+      // 返回空的 storyboard 回應，避免 Shaka Player 報錯
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      })
+      res.end(JSON.stringify({ storyboards: [] }))
       return
     }
 

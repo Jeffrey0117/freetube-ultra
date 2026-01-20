@@ -201,6 +201,44 @@ class SubscriptionCache {
   }
 }
 
+class Users {
+  static find() {
+    return window.ftElectron.dbUsers(DBActions.GENERAL.FIND)
+  }
+
+  static findById(id) {
+    return window.ftElectron.dbUsers(DBActions.USERS.FIND_BY_ID, id)
+  }
+
+  static findByUsername(username) {
+    return window.ftElectron.dbUsers(DBActions.USERS.FIND_BY_USERNAME, username)
+  }
+
+  static create(user) {
+    return window.ftElectron.dbUsers(DBActions.GENERAL.CREATE, user)
+  }
+
+  static upsert(user) {
+    return window.ftElectron.dbUsers(DBActions.GENERAL.UPSERT, user)
+  }
+
+  static delete(id) {
+    return window.ftElectron.dbUsers(DBActions.GENERAL.DELETE, id)
+  }
+
+  static updateLastLogin(id) {
+    return window.ftElectron.dbUsers(DBActions.USERS.UPDATE_LAST_LOGIN, id)
+  }
+
+  static updateStats(id, stats) {
+    return window.ftElectron.dbUsers(DBActions.USERS.UPDATE_STATS, { id, stats })
+  }
+
+  static deleteAll() {
+    return window.ftElectron.dbUsers(DBActions.GENERAL.DELETE_ALL)
+  }
+}
+
 export {
   Settings as settings,
   History as history,
@@ -208,4 +246,5 @@ export {
   Playlists as playlists,
   SearchHistory as searchHistory,
   SubscriptionCache as subscriptionCache,
+  Users as users,
 }

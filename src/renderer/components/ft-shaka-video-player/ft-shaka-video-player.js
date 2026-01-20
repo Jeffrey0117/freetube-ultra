@@ -299,6 +299,11 @@ export default defineComponent({
       return parseInt(value)
     })
 
+    /** @type {import('vue').ComputedRef<number>} */
+    const defaultVolume = computed(() => {
+      return store.getters.getDefaultVolume
+    })
+
     /** @type {import('vue').ComputedRef<boolean>} */
     const enterFullscreenOnDisplayRotate = computed(() => {
       return store.getters.getEnterFullscreenOnDisplayRotate
@@ -1238,19 +1243,20 @@ export default defineComponent({
     function updateVolume() {
       const video_ = video.value
       // https://docs.videojs.com/html5#volume
-      if (sessionStorage.getItem('muted') === 'false' && video_.volume === 0) {
-        // If video is muted by dragging volume slider, it doesn't change 'muted' in sessionStorage to true
-        // hence compare it with 'false' and set volume to defaultVolume.
-        const volume = parseFloat(sessionStorage.getItem('defaultVolume'))
+      // 使用 localStorage 持久保存音量設定
+      if (localStorage.getItem('ft-muted') === 'false' && video_.volume === 0) {
+        // If video is muted by dragging volume slider, it doesn't change 'muted' in localStorage to true
+        // hence compare it with 'false' and set volume to 0.3 (default).
+        const volume = 0.3
         const muted = true
-        sessionStorage.setItem('volume', volume.toString())
-        sessionStorage.setItem('muted', String(muted))
+        localStorage.setItem('ft-volume', volume.toString())
+        localStorage.setItem('ft-muted', String(muted))
       } else {
         // If volume isn't muted by dragging the slider, muted and volume values are carried over to next video.
         const volume = video_.volume
         const muted = video_.muted
-        sessionStorage.setItem('volume', volume.toString())
-        sessionStorage.setItem('muted', String(muted))
+        localStorage.setItem('ft-volume', volume.toString())
+        localStorage.setItem('ft-muted', String(muted))
       }
 
       if (showStats.value) {
@@ -2617,14 +2623,20 @@ export default defineComponent({
     onMounted(async () => {
       const videoElement = video.value
 
-      const volume = sessionStorage.getItem('volume')
+      // 使用 localStorage 持久保存音量設定（不會因為重新整理而遺失）
+      const volume = localStorage.getItem('ft-volume')
       if (volume !== null) {
         videoElement.volume = parseFloat(volume)
+      } else {
+        // 預設音量 30%，避免太大聲
+        const defaultVol = 0.3
+        videoElement.volume = defaultVol
+        localStorage.setItem('ft-volume', defaultVol.toString())
       }
 
-      const muted = sessionStorage.getItem('muted')
+      const muted = localStorage.getItem('ft-muted')
       if (muted !== null) {
-        // as sessionStorage stores string values which are truthy by default so we must check with 'true'
+        // as localStorage stores string values which are truthy by default so we must check with 'true'
         // otherwise 'false' will be returned as true as well
         videoElement.muted = (muted === 'true')
       }
@@ -2780,7 +2792,11 @@ export default defineComponent({
       if (props.format === 'dash' || props.format === 'audio') {
         try {
           console.log('[DEBUG performFirstLoad] manifestSrc:', props.manifestSrc?.substring(0, 100))
+          console.log('[DEBUG performFirstLoad] format:', props.format, 'defaultQuality:', defaultQuality.value)
           await player.load(props.manifestSrc, props.startTime, props.manifestMimeType)
+
+          const variants = player.getVariantTracks()
+          console.log('[DEBUG performFirstLoad] Available variants:', variants.length, variants.map(v => `${v.width}x${v.height}`))
 
           if (defaultQuality.value !== 'auto') {
             if (props.format === 'dash') {

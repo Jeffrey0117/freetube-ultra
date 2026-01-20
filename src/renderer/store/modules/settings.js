@@ -400,9 +400,9 @@ const sideEffectHandlers = {
   },
 
   defaultVolume: (_, value) => {
-    sessionStorage.setItem('volume', value)
-    value === 0 ? sessionStorage.setItem('muted', 'true') : sessionStorage.setItem('muted', 'false')
-    sessionStorage.setItem('defaultVolume', value)
+    // 使用 localStorage 持久保存音量設定
+    localStorage.setItem('ft-volume', value)
+    value === 0 ? localStorage.setItem('ft-muted', 'true') : localStorage.setItem('ft-muted', 'false')
   },
 
   uiScale: (_, value) => {

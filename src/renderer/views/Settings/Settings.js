@@ -15,6 +15,7 @@ import ParentalControlSettings from '../../components/ParentalControlSettings.vu
 import ExperimentalSettings from '../../components/ExperimentalSettings/ExperimentalSettings.vue'
 import PasswordSettings from '../../components/PasswordSettings/PasswordSettings.vue'
 import PasswordDialog from '../../components/PasswordDialog/PasswordDialog.vue'
+import YouTubeAccountSettings from '../../components/YouTubeAccountSettings/YouTubeAccountSettings.vue'
 import FtToggleSwitch from '../../components/FtToggleSwitch/FtToggleSwitch.vue'
 import FtButton from '../../components/FtButton/FtButton.vue'
 import FtSettingsMenu from '../../components/FtSettingsMenu/FtSettingsMenu.vue'
@@ -36,6 +37,7 @@ export default defineComponent({
     'parental-control-settings': ParentalControlSettings,
     'password-settings': PasswordSettings,
     'password-dialog': PasswordDialog,
+    'youtube-account-settings': YouTubeAccountSettings,
     'ft-button': FtButton,
     'ft-toggle-switch': FtToggleSwitch,
     'ft-settings-menu': FtSettingsMenu,
@@ -107,6 +109,11 @@ export default defineComponent({
           type: 'privacy-settings',
           title: this.$t('Settings.Privacy Settings.Privacy Settings'),
           icon: 'lock'
+        },
+        {
+          type: 'youtube-account-settings',
+          title: this.$t('Settings.YouTube Account Settings.YouTube Account Settings'),
+          icon: 'user-circle'
         },
         {
           type: 'data-settings',

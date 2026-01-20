@@ -1,5 +1,5 @@
 const path = require('path')
-const { readFileSync, readdirSync } = require('fs')
+const { readFileSync, readdirSync, existsSync } = require('fs')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { VueLoaderPlugin } = require('vue-loader')
@@ -15,6 +15,22 @@ const {
 const { sigFrameTemplateParameters } = require('./sigFrameConfig')
 
 const isDevMode = process.env.NODE_ENV === 'development'
+
+// 讀取 .env.local 檔案中的 YOUTUBE_COOKIE
+function loadYouTubeCookieFromEnv() {
+  const envLocalPath = path.join(__dirname, '../.env.local')
+  if (existsSync(envLocalPath)) {
+    const content = readFileSync(envLocalPath, 'utf-8')
+    // 簡單解析 YOUTUBE_COOKIE="..." 格式
+    const match = content.match(/YOUTUBE_COOKIE="([\s\S]*?)"\s*$/m)
+    if (match) {
+      return match[1]
+    }
+  }
+  return null
+}
+
+const YOUTUBE_COOKIE = loadYouTubeCookieFromEnv()
 
 const { version: swiperVersion } = JSON.parse(readFileSync(path.join(__dirname, '../node_modules/swiper/package.json')))
 
@@ -133,6 +149,7 @@ const config = {
       'process.env.IS_ELECTRON': true,
       'process.env.IS_ELECTRON_MAIN': false,
       'process.env.SUPPORTS_LOCAL_API': true,
+      'process.env.YOUTUBE_COOKIE': YOUTUBE_COOKIE ? JSON.stringify(YOUTUBE_COOKIE) : 'null',
       __VUE_OPTIONS_API__: 'true',
       __VUE_PROD_DEVTOOLS__: 'false',
       __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',

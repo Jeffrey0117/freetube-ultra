@@ -13,6 +13,7 @@ import player from './modules/player'
 import musicMode from './modules/musicMode'
 import onboarding from './modules/onboarding'
 import user from './modules/user'
+import youtubeAuth from './modules/youtube-auth'
 
 export default createStore({
   modules: {
@@ -28,6 +29,7 @@ export default createStore({
     musicMode,
     onboarding,
     user,
+    youtubeAuth,
   },
 
   // Detects unsafe changes to the store state e.g. outside of mutations

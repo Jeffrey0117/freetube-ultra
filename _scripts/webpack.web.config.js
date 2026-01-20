@@ -18,6 +18,19 @@ const isDevMode = process.env.NODE_ENV === 'development'
 
 const { version: swiperVersion } = JSON.parse(fs.readFileSync(path.join(__dirname, '../node_modules/swiper/package.json')))
 
+// 從 .env.local 讀取 YouTube Cookie
+function loadYouTubeCookieFromEnv() {
+  const envLocalPath = path.join(__dirname, '../.env.local')
+  if (fs.existsSync(envLocalPath)) {
+    const content = fs.readFileSync(envLocalPath, 'utf-8')
+    const match = content.match(/^YOUTUBE_COOKIE=(.*)$/m)
+    if (match) {
+      return match[1].trim()
+    }
+  }
+  return ''
+}
+
 /** @type {import('webpack').Configuration} */
 const config = {
   name: 'web',
@@ -30,11 +43,21 @@ const config = {
     path: path.join(__dirname, '../dist/web'),
     filename: '[name].js',
   },
-  externals: {
-    'youtubei.js': '{}'
-  },
+  // 不再排除 youtubei.js，使用 web 版本支援 Local API
   module: {
     rules: [
+      // 對 nedb 和 util 注入 process polyfill（避免與 protobuf 衝突）
+      {
+        test: /[\\/]node_modules[\\/](@seald-io[\\/]nedb|util)[\\/].*\.js$/,
+        use: [
+          {
+            loader: 'imports-loader',
+            options: {
+              additionalCode: 'var process = require("process/browser");',
+            },
+          },
+        ],
+      },
       {
         test: /\.js$/,
         use: 'babel-loader',
@@ -127,7 +150,9 @@ const config = {
       'process.platform': 'undefined',
       'process.env.IS_ELECTRON': false,
       'process.env.IS_ELECTRON_MAIN': false,
+      // 網頁版使用 Invidious API 模式，但透過 proxy 指向本地 API Server（支援 cookie 認證）
       'process.env.SUPPORTS_LOCAL_API': false,
+      'process.env.YOUTUBE_COOKIE': JSON.stringify(loadYouTubeCookieFromEnv()),
       __VUE_OPTIONS_API__: 'true',
       __VUE_PROD_DEVTOOLS__: 'false',
       __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
@@ -135,9 +160,6 @@ const config = {
       __VUE_I18N_FULL_INSTALL__: 'false',
       __INTLIFY_PROD_DEVTOOLS__: 'false',
       'process.env.SWIPER_VERSION': `'${swiperVersion}'`
-    }),
-    new webpack.ProvidePlugin({
-      process: 'process/browser'
     }),
     new HtmlWebpackPlugin({
       excludeChunks: ['processTaskWorker'],
@@ -166,13 +188,20 @@ const config = {
     alias: {
       DB_HANDLERS_ELECTRON_RENDERER_OR_WEB$: path.resolve(__dirname, '../src/datastores/handlers/web.js'),
 
+      // 使用 youtubei.js 的 web 版本，支援瀏覽器環境
+      'youtubei.js$': 'youtubei.js/web',
+
       // change to "shaka-player.ui.debug.js" to get debug logs (update jsconfig to get updated types)
       'shaka-player$': 'shaka-player/dist/shaka-player.ui.js',
 
       // Make @fortawesome/vue-fontawesome use the trimmed down API instead of the original @fortawesome/fontawesome-svg-core
       '@fortawesome/fontawesome-svg-core$': path.resolve(__dirname, '../src/renderer/fontawesome-minimal.js')
     },
-    extensions: ['.js', '.vue']
+    extensions: ['.js', '.vue'],
+    fallback: {
+      // Node.js built-ins 的瀏覽器 polyfill
+      process: require.resolve('process/browser'),
+    }
   },
   target: 'web',
 }

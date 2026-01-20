@@ -456,6 +456,39 @@ Settings:
         Auto: 自動
         Semi-auto: 半自動
       Tooltip: 「自動」 = 每次退出影片頁面、影片結束以及遇到錯誤（如：速率受限和觀看連線階段已過期）時儲存。「半自動」 = 與自動類似（除了退出影片頁面外），並且可透過影片播放器下方的「儲存觀看進度」按鈕手動儲存進度。
+  YouTube Account Settings:
+    YouTube Account Settings: YouTube 帳戶
+    Description: 透過導入 YouTube Cookie，您可以獲得個人化的搜尋結果和推薦內容。
+    Status: 狀態
+    Account: 帳戶
+    Connected: 已連接
+    Disconnected: 已斷開
+    Not Connected: 未連接
+    Validating: 驗證中...
+    Paste Your Cookie: 請貼上您的 YouTube Cookie
+    Cookie Placeholder: 在此貼上從瀏覽器複製的 Cookie...
+    How to Get Cookie: 如何取得 Cookie？
+    Validate and Save: 驗證並儲存
+    Revalidate Cookie: 重新驗證 Cookie
+    Clear Cookie: 清除 Cookie
+    Clear Cookie Confirm: 您確定要清除已儲存的 YouTube Cookie 嗎？
+    Cookie Saved Successfully: Cookie 已成功儲存
+    Cookie Save Failed: Cookie 儲存失敗
+    Cookie Valid: Cookie 有效
+    Cookie Invalid: Cookie 無效或已過期
+    Cookie Cleared: 已清除 YouTube Cookie
+    Security Notice Title: 安全提示
+    Security Notice 1: Cookie 包含您的 YouTube 登入資訊，請勿分享給他人
+    Security Notice 2: FreeTube 只會將 Cookie 用於向 YouTube 發送請求
+    Security Notice 3: Cookie 會加密儲存在您的裝置上，您可以隨時清除
+    Help Title: 如何取得 YouTube Cookie
+    Help Step 1: 在瀏覽器中登入 YouTube (youtube.com)
+    Help Step 2: 開啟開發者工具
+    Help Step 3: 切換到「應用程式」或「Application」分頁
+    Help Step 4: 在左側選擇「Cookies」>「https://www.youtube.com」
+    Help Step 5: 全選所有 Cookie（Ctrl+A / Cmd+A）並複製
+    Help Step 6: 貼到 FreeTube 的輸入框中
+    or: 或
   Data Settings:
     How do I import my subscriptions?: 我要如何匯入我的訂閱？
     Unknown data key: 未知的資料金鑰
