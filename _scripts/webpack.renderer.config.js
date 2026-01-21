@@ -107,6 +107,9 @@ const config = {
             options: {
               esModule: false
             }
+          },
+          {
+            loader: 'postcss-loader'
           }
         ],
       },

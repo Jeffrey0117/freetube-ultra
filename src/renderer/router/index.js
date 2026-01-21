@@ -17,6 +17,10 @@ import Post from '../views/Post.vue'
 import MusicPlayer from '../components/MusicPlayer/MusicPlayer.vue'
 import MusicHome from '../views/Music/MusicHome.vue'
 
+// YouTube Theme (MeeTube)
+import YtDemo from '../views/YtDemo/YtDemo.vue'
+import YtWatch from '../views/YtWatch/YtWatch.vue'
+
 // 會員系統相關頁面
 import Profile from '../views/Profile/Profile.vue'
 
@@ -248,6 +252,88 @@ const router = createRouter({
       },
       // 使用動態導入以減少初始載入時間
       component: () => import('../views/SwitchUser/SwitchUser.vue')
+    },
+
+    // ==================== YouTube Theme (MeeTube) ====================
+    {
+      path: '/yt',
+      name: 'ytHome',
+      meta: {
+        title: 'MeeTube'
+      },
+      component: YtDemo
+    },
+    {
+      path: '/yt/watch/:id',
+      name: 'ytWatch',
+      meta: {
+        title: '觀看影片'
+      },
+      component: YtWatch
+    },
+    {
+      path: '/yt/search/:query',
+      name: 'ytSearch',
+      meta: {
+        title: '搜尋結果'
+      },
+      component: YtDemo // TODO: Create dedicated search page
+    },
+    {
+      path: '/yt/channel/:id/:currentTab?',
+      name: 'ytChannel',
+      meta: {
+        title: '頻道'
+      },
+      component: YtDemo // TODO: Create dedicated channel page
+    },
+    {
+      path: '/yt/trending',
+      name: 'ytTrending',
+      meta: {
+        title: '發燒影片'
+      },
+      component: YtDemo // TODO: Create dedicated trending page
+    },
+    {
+      path: '/yt/subscriptions',
+      name: 'ytSubscriptions',
+      meta: {
+        title: '訂閱內容'
+      },
+      component: YtDemo // TODO: Create dedicated subscriptions page
+    },
+    {
+      path: '/yt/history',
+      name: 'ytHistory',
+      meta: {
+        title: '觀看記錄'
+      },
+      component: YtDemo // TODO: Create dedicated history page
+    },
+    {
+      path: '/yt/library',
+      name: 'ytLibrary',
+      meta: {
+        title: '媒體庫'
+      },
+      component: YtDemo // TODO: Create dedicated library page
+    },
+    {
+      path: '/yt/playlists',
+      name: 'ytPlaylists',
+      meta: {
+        title: '播放清單'
+      },
+      component: YtDemo // TODO: Create dedicated playlists page
+    },
+    {
+      path: '/yt/settings',
+      name: 'ytSettings',
+      meta: {
+        title: '設定'
+      },
+      component: YtDemo // TODO: Create dedicated settings page
     }
   ],
   scrollBehavior(to, from, savedPosition) {

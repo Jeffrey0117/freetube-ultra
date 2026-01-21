@@ -5,43 +5,14 @@
     :class="{
       hideOutlines: outlinesHidden,
       isLocaleRightToLeft: isLocaleRightToLeft,
-      isSideNavOpen: isSideNavOpen,
+      isSideNavOpen: isSideNavOpen && !isYtTheme,
       hideLabelsSideBar: hideLabelsSideBar && !isSideNavOpen
     }"
   >
-    <TopNav
-      :inert="isAnyPromptOpen"
-    />
-    <SideNav
-      :inert="isAnyPromptOpen"
-    />
-    <FtFlexBox
-      class="flexBox routerView"
-      role="main"
-      :inert="isAnyPromptOpen"
-    >
-      <div
-        v-if="showUpdatesBanner || showBlogBanner"
-        class="banner-wrapper"
-      >
-        <FtNotificationBanner
-          v-if="showUpdatesBanner"
-          class="banner"
-          :message="updateBannerMessage"
-          role="link"
-          @click="handleUpdateBannerClick"
-        />
-        <FtNotificationBanner
-          v-if="showBlogBanner"
-          class="banner"
-          :message="blogBannerMessage"
-          role="link"
-          @click="handleNewBlogBannerClick"
-        />
-      </div>
+    <!-- YouTube Theme: Full-screen layout without FreeTube nav -->
+    <template v-if="isYtTheme">
       <RouterView
         v-slot="{ Component }"
-        class="routerView"
       >
         <Transition
           mode="out-in"
@@ -50,7 +21,53 @@
           <component :is="Component" />
         </Transition>
       </RouterView>
-    </FtFlexBox>
+    </template>
+
+    <!-- FreeTube Default Layout -->
+    <template v-else>
+      <TopNav
+        :inert="isAnyPromptOpen"
+      />
+      <SideNav
+        :inert="isAnyPromptOpen"
+      />
+      <FtFlexBox
+        class="flexBox routerView"
+        role="main"
+        :inert="isAnyPromptOpen"
+      >
+        <div
+          v-if="showUpdatesBanner || showBlogBanner"
+          class="banner-wrapper"
+        >
+          <FtNotificationBanner
+            v-if="showUpdatesBanner"
+            class="banner"
+            :message="updateBannerMessage"
+            role="link"
+            @click="handleUpdateBannerClick"
+          />
+          <FtNotificationBanner
+            v-if="showBlogBanner"
+            class="banner"
+            :message="blogBannerMessage"
+            role="link"
+            @click="handleNewBlogBannerClick"
+          />
+        </div>
+        <RouterView
+          v-slot="{ Component }"
+          class="routerView"
+        >
+          <Transition
+            mode="out-in"
+            name="fade"
+          >
+            <component :is="Component" />
+          </Transition>
+        </RouterView>
+      </FtFlexBox>
+    </template>
     <FtPrompt
       v-if="showReleaseNotes"
       theme="readable-width"
@@ -144,6 +161,9 @@ import { loadLocale } from './i18n/index'
 const route = useRoute()
 const router = useRouter()
 const { locale, t } = useI18n()
+
+// Check if current route is YouTube theme
+const isYtTheme = computed(() => route.path.startsWith('/yt'))
 
 /** @type {import('vue').ComputedRef<boolean>} */
 const isSideNavOpen = computed(() => store.getters.getIsSideNavOpen)

@@ -7,6 +7,7 @@ import { showExternalPlayerUnsupportedActionToast, showToast } from './helpers/u
 import { library } from './fontawesome-minimal'
 // import the styles
 import '@fortawesome/fontawesome-svg-core/styles.css'
+import './styles/tailwind.css'
 
 import { register as registerSwiper } from 'swiper/element'
 
