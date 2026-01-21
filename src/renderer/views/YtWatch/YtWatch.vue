@@ -114,6 +114,13 @@
                   <font-awesome-icon :icon="['fas', 'download']" class="text-black dark:text-white" />
                   <span class="ml-2 text-black dark:text-white text-sm">下載</span>
                 </button>
+                <button
+                  class="flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700"
+                  @click="playAsMusic"
+                >
+                  <font-awesome-icon :icon="['fas', 'music']" />
+                  <span class="ml-2 text-sm">音樂模式</span>
+                </button>
               </div>
             </div>
 
@@ -426,6 +433,11 @@ export default {
         return `https://i.ytimg.com/vi/${video.videoId}/mqdefault.jpg`
       }
       return ''
+    },
+
+    playAsMusic() {
+      // Navigate to music player with current video
+      this.$router.push(`/yt/music/play/${this.videoId}`)
     }
   }
 }

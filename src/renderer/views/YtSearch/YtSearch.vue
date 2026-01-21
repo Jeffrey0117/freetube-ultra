@@ -137,7 +137,6 @@
 
 <script>
 import { YtHeader, YtSidebar } from '../../components/yt-theme'
-import { invidiousAPICall } from '../../helpers/api/invidious'
 
 export default {
   name: 'YtSearch',
@@ -178,24 +177,23 @@ export default {
       this.page = 1
 
       try {
-        const response = await invidiousAPICall({
-          resource: 'search',
-          id: '',
-          params: {
-            q: this.searchQuery,
-            page: this.page,
-            type: 'all'
+        // Use local API server for search
+        const response = await fetch(`/api/v1/search?q=${encodeURIComponent(this.searchQuery)}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data && Array.isArray(data)) {
+            this.results = data.filter(item =>
+              item.type === 'video' || item.type === 'channel' || item.type === 'playlist'
+            )
+          } else {
+            this.results = []
           }
-        })
-
-        if (response && Array.isArray(response)) {
-          this.results = response.filter(item =>
-            item.type === 'video' || item.type === 'channel' || item.type === 'playlist'
-          )
-          this.hasMore = response.length >= 20
+          // Local API doesn't support pagination yet
+          this.hasMore = false
         }
       } catch (e) {
         console.error('Search failed:', e)
+        this.results = []
       }
 
       this.isLoading = false

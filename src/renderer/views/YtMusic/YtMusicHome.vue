@@ -108,7 +108,6 @@
 
 <script>
 import { mapState, mapActions } from 'vuex'
-import { invidiousAPICall } from '../../helpers/api/invidious'
 import { getAudioStreamUrl } from '../../helpers/api/music'
 
 export default {
@@ -133,31 +132,16 @@ export default {
     async fetchTrendingMusic() {
       this.isLoading = true
       try {
-        // Fetch trending music videos
-        const response = await invidiousAPICall({
-          resource: 'trending',
-          id: '',
-          params: { type: 'music' }
-        })
-
-        if (response && Array.isArray(response)) {
-          this.musicVideos = response.filter(v => v.type === 'video').slice(0, 20)
+        // Fetch trending/popular videos from local API
+        const response = await fetch('/api/v1/trending')
+        if (response.ok) {
+          const data = await response.json()
+          if (data && Array.isArray(data)) {
+            this.musicVideos = data.filter(v => v.type === 'video').slice(0, 20)
+          }
         }
       } catch (e) {
         console.error('Failed to fetch trending music:', e)
-        // Fallback to regular trending
-        try {
-          const fallback = await invidiousAPICall({
-            resource: 'trending',
-            id: '',
-            params: {}
-          })
-          if (fallback && Array.isArray(fallback)) {
-            this.musicVideos = fallback.filter(v => v.type === 'video').slice(0, 20)
-          }
-        } catch (err) {
-          console.error('Fallback also failed:', err)
-        }
       }
       this.isLoading = false
     },

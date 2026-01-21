@@ -88,8 +88,6 @@
 </template>
 
 <script>
-import { invidiousAPICall } from '../../helpers/api/invidious'
-
 export default {
   name: 'YtHeader',
   data() {
@@ -129,13 +127,13 @@ export default {
 
     async fetchSuggestions() {
       try {
-        const response = await invidiousAPICall({
-          resource: 'search/suggestions',
-          id: '',
-          params: { q: this.searchQuery }
-        })
-        if (response && response.suggestions) {
-          this.suggestions = response.suggestions.slice(0, 8)
+        // Use local API server for search suggestions
+        const response = await fetch(`/api/v1/search/suggestions?q=${encodeURIComponent(this.searchQuery)}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data && data.suggestions) {
+            this.suggestions = data.suggestions.slice(0, 8)
+          }
         }
       } catch (e) {
         console.error('Failed to fetch suggestions:', e)
