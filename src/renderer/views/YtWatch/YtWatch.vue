@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-[#0f0f0f]">
+  <div class="fixed inset-0 bg-white dark:bg-[#0f0f0f] overflow-y-auto">
     <!-- Header -->
     <YtHeader @toggle-sidebar="toggleSidebar" />
 
     <!-- Main Content -->
-    <div class="flex justify-center pt-14">
+    <div class="flex justify-center pt-14 min-h-[calc(100vh-56px)]">
       <div class="w-full max-w-[1800px] flex flex-col lg:flex-row px-4 lg:px-6">
         <!-- Video Area -->
         <div class="flex flex-col lg:w-[calc(100%-400px)] xl:w-[calc(100%-420px)]">
@@ -141,10 +141,10 @@
         </div>
 
         <!-- Related Videos -->
-        <div class="lg:w-[400px] xl:w-[420px] lg:pl-6 mt-6 lg:mt-0">
+        <div class="lg:w-[400px] xl:w-[420px] lg:pl-6 mt-6 lg:mt-0 min-h-[calc(100vh-120px)] bg-white dark:bg-[#0f0f0f]">
           <!-- Skeleton Loading -->
           <template v-if="isLoading">
-            <div v-for="i in 8" :key="'skeleton-' + i" class="mb-3 flex animate-pulse">
+            <div v-for="i in 12" :key="'skeleton-' + i" class="mb-3 flex animate-pulse">
               <div class="w-40 min-w-[160px] aspect-video rounded-lg bg-gray-200 dark:bg-[#272727]"></div>
               <div class="ml-2 flex flex-col flex-1">
                 <div class="h-4 bg-gray-200 dark:bg-[#272727] rounded w-full mb-2"></div>
@@ -174,7 +174,7 @@
                 </div>
                 <div class="ml-2 flex flex-col overflow-hidden">
                   <span class="text-sm font-medium text-black dark:text-white line-clamp-2">{{ video.title }}</span>
-                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ video.author }}</span>
+                  <span v-if="video.author" class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ video.author }}</span>
                   <div class="text-xs text-gray-600 dark:text-gray-400">
                     <span v-if="video.viewCount">{{ formatCount(video.viewCount) }} 次觀看</span>
                     <span v-if="video.viewCount && video.publishedText" class="mx-1">•</span>
@@ -352,13 +352,15 @@ export default {
           this.relatedVideos = result.recommendedVideos.slice(0, 20).map(video => ({
             videoId: video.videoId,
             title: video.title,
-            author: video.author,
-            authorId: video.authorId,
-            viewCount: video.viewCount,
-            publishedText: video.publishedText,
-            lengthSeconds: video.lengthSeconds,
-            liveNow: video.liveNow
+            // Handle different possible field names for author
+            author: video.author || video.authorName || video.channelTitle || '',
+            authorId: video.authorId || video.channelId || '',
+            viewCount: video.viewCount || video.viewCountText ? parseInt(String(video.viewCountText).replace(/[^0-9]/g, '')) : 0,
+            publishedText: video.publishedText || video.publishedTimeText || '',
+            lengthSeconds: video.lengthSeconds || 0,
+            liveNow: video.liveNow || false
           }))
+          console.log('Related videos loaded:', this.relatedVideos.length, this.relatedVideos[0])
         }
 
       } catch (error) {

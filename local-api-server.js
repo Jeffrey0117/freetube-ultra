@@ -1286,52 +1286,10 @@ const server = http.createServer(async (req, res) => {
         console.log(`  Could not get related videos: ${e.message}`)
       }
 
-      // === 混合推薦策略 ===
-      // 1. 取得同頻道影片 (5部)
-      let channelVideos = []
-      if (channelId) {
-        try {
-          const channel = await innertube.getChannel(channelId)
-          // 嘗試取得影片，即使 has_videos 為 false (YouTube.js 有時偵測不到)
-          const videosTab = await channel.getVideos()
-          const allChannelVideos = videosTab.videos || []
-          // 取前 5 部，排除目前影片
-          channelVideos = allChannelVideos
-            .filter(v => v.id !== videoId)
-            .slice(0, 5)
-          if (channelVideos.length > 0) {
-            console.log(`  Added ${channelVideos.length} channel videos to recommendations`)
-          }
-        } catch (e) {
-          // 忽略錯誤，繼續使用 YouTube 原本推薦
-        }
-      }
+      // 使用 YouTube 原本的推薦影片
+      console.log(`  Related videos: ${relatedVideos.length} total`)
 
-      // 2. 合併推薦：同頻道影片優先 + YouTube 推薦
-      // 去重複 (by videoId)
-      const seenIds = new Set()
-      const mergedRelated = []
-
-      // 先加同頻道影片
-      for (const video of channelVideos) {
-        if (!seenIds.has(video.id)) {
-          seenIds.add(video.id)
-          mergedRelated.push(video)
-        }
-      }
-
-      // 再加 YouTube 原本推薦
-      for (const video of relatedVideos) {
-        const vid = video.id || video.video_id || video.content_id
-        if (vid && !seenIds.has(vid)) {
-          seenIds.add(vid)
-          mergedRelated.push(video)
-        }
-      }
-
-      console.log(`  Mixed recommendations: ${channelVideos.length} channel + ${relatedVideos.length} related = ${mergedRelated.length} total`)
-
-      const converted = await convertVideoInfo(info, mergedRelated, channelAvatar)
+      const converted = await convertVideoInfo(info, relatedVideos, channelAvatar)
       res.writeHead(200)
       res.end(JSON.stringify(converted))
       return

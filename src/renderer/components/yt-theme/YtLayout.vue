@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-screen bg-white dark:bg-[#0f0f0f]">
+  <div class="fixed inset-0 flex flex-col bg-white dark:bg-[#0f0f0f]">
     <!-- Header -->
     <YtHeader @toggle-sidebar="toggleSidebar" />
 
