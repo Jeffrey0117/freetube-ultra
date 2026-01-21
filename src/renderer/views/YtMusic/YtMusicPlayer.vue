@@ -84,11 +84,11 @@
     <div class="px-6 pb-6">
       <div class="flex items-center justify-between mb-3">
         <span class="text-white font-medium">播放佇列</span>
-        <span class="text-gray-400 text-sm">{{ queue.length }} 首歌曲</span>
+        <span class="text-gray-400 text-sm">{{ (queue || []).length }} 首歌曲</span>
       </div>
       <div class="space-y-2 max-h-40 overflow-y-auto">
         <div
-          v-for="(track, index) in queue.slice(0, 5)"
+          v-for="(track, index) in (queue || []).slice(0, 5)"
           :key="track.videoId"
           class="flex items-center p-2 rounded-lg hover:bg-white/10 cursor-pointer"
           :class="{ 'bg-white/10': track.videoId === currentTrack?.videoId }"
