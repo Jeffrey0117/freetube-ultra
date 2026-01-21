@@ -20,6 +20,9 @@ import MusicHome from '../views/Music/MusicHome.vue'
 // YouTube Theme (MeeTube)
 import YtDemo from '../views/YtDemo/YtDemo.vue'
 import YtWatch from '../views/YtWatch/YtWatch.vue'
+import YtSearch from '../views/YtSearch/YtSearch.vue'
+import YtMusicHome from '../views/YtMusic/YtMusicHome.vue'
+import YtMusicPlayer from '../views/YtMusic/YtMusicPlayer.vue'
 
 // 會員系統相關頁面
 import Profile from '../views/Profile/Profile.vue'
@@ -277,7 +280,7 @@ const router = createRouter({
       meta: {
         title: '搜尋結果'
       },
-      component: YtDemo // TODO: Create dedicated search page
+      component: YtSearch
     },
     {
       path: '/yt/channel/:id/:currentTab?',
@@ -334,6 +337,31 @@ const router = createRouter({
         title: '設定'
       },
       component: YtDemo // TODO: Create dedicated settings page
+    },
+    // MeeTube Music Mode
+    {
+      path: '/yt/music',
+      name: 'ytMusic',
+      meta: {
+        title: 'MeeTube Music'
+      },
+      component: YtMusicHome
+    },
+    {
+      path: '/yt/music/play/:id',
+      name: 'ytMusicPlay',
+      meta: {
+        title: '正在播放'
+      },
+      component: YtMusicPlayer
+    },
+    {
+      path: '/yt/music/search',
+      name: 'ytMusicSearch',
+      meta: {
+        title: '搜尋音樂'
+      },
+      component: YtMusicHome // Reuse home with search mode
     }
   ],
   scrollBehavior(to, from, savedPosition) {
