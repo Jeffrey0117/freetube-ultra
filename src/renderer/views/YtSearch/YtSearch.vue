@@ -200,36 +200,9 @@ export default {
     },
 
     async loadMore() {
-      if (this.isLoadingMore) return
-
-      this.isLoadingMore = true
-      this.page++
-
-      try {
-        const response = await invidiousAPICall({
-          resource: 'search',
-          id: '',
-          params: {
-            q: this.searchQuery,
-            page: this.page,
-            type: 'all'
-          }
-        })
-
-        if (response && Array.isArray(response)) {
-          const newResults = response.filter(item =>
-            item.type === 'video' || item.type === 'channel' || item.type === 'playlist'
-          )
-          this.results = [...this.results, ...newResults]
-          this.hasMore = response.length >= 20
-        } else {
-          this.hasMore = false
-        }
-      } catch (e) {
-        console.error('Load more failed:', e)
-      }
-
-      this.isLoadingMore = false
+      // Local API doesn't support pagination yet
+      // This function is kept for future implementation
+      this.hasMore = false
     },
 
     getVideoThumbnail(video) {
