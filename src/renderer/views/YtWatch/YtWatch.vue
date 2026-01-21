@@ -51,7 +51,14 @@
 
           <!-- Video Info -->
           <div class="mt-3">
-            <h1 class="text-lg md:text-xl font-semibold text-black dark:text-white line-clamp-2">
+            <!-- Skeleton for title -->
+            <template v-if="isLoading">
+              <div class="animate-pulse">
+                <div class="h-6 bg-gray-200 dark:bg-[#272727] rounded w-3/4 mb-2"></div>
+                <div class="h-6 bg-gray-200 dark:bg-[#272727] rounded w-1/2"></div>
+              </div>
+            </template>
+            <h1 v-else class="text-lg md:text-xl font-semibold text-black dark:text-white line-clamp-2">
               {{ videoTitle }}
             </h1>
 
@@ -59,18 +66,29 @@
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mt-3 gap-3">
               <!-- Channel Info -->
               <div class="flex items-center">
-                <router-link :to="`/yt/channel/${channelId}`" class="flex items-center">
-                  <div class="h-10 w-10 rounded-full overflow-hidden bg-gray-300 dark:bg-[#303030] flex-shrink-0">
-                    <img v-if="channelThumbnail" :src="channelThumbnail" :alt="channelName" class="w-full h-full object-cover" />
+                <template v-if="isLoading">
+                  <div class="animate-pulse flex items-center">
+                    <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-[#272727]"></div>
+                    <div class="ml-3">
+                      <div class="h-4 bg-gray-200 dark:bg-[#272727] rounded w-24 mb-1"></div>
+                      <div class="h-3 bg-gray-200 dark:bg-[#272727] rounded w-16"></div>
+                    </div>
                   </div>
-                  <div class="ml-3">
-                    <span class="text-black dark:text-white font-medium flex items-center">
-                      {{ channelName }}
-                      <font-awesome-icon :icon="['fas', 'check-circle']" class="text-gray-500 text-xs ml-1" />
-                    </span>
-                    <span class="text-xs text-gray-600 dark:text-gray-400">{{ channelSubscriptionCountText }}</span>
-                  </div>
-                </router-link>
+                </template>
+                <template v-else>
+                  <router-link :to="`/yt/channel/${channelId}`" class="flex items-center">
+                    <div class="h-10 w-10 rounded-full overflow-hidden bg-gray-300 dark:bg-[#303030] flex-shrink-0">
+                      <img v-if="channelThumbnail" :src="channelThumbnail" :alt="channelName" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="ml-3">
+                      <span class="text-black dark:text-white font-medium flex items-center">
+                        {{ channelName }}
+                        <font-awesome-icon :icon="['fas', 'check-circle']" class="text-gray-500 text-xs ml-1" />
+                      </span>
+                      <span class="text-xs text-gray-600 dark:text-gray-400">{{ channelSubscriptionCountText }}</span>
+                    </div>
+                  </router-link>
+                </template>
                 <button class="ml-6 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-full text-sm font-medium hover:opacity-80">
                   訂閱
                 </button>
@@ -101,49 +119,74 @@
 
             <!-- Description Box -->
             <div class="mt-3 p-3 bg-gray-100 dark:bg-[#272727] rounded-xl">
-              <div class="flex text-sm text-black dark:text-white font-medium">
-                <span>{{ formatCount(videoViewCount) }} 次觀看</span>
-                <span class="mx-2">•</span>
-                <span>{{ videoPublishedText }}</span>
-              </div>
-              <p class="mt-2 text-sm text-black dark:text-white whitespace-pre-wrap line-clamp-3">
-                {{ videoDescription }}
-              </p>
+              <template v-if="isLoading">
+                <div class="animate-pulse">
+                  <div class="h-4 bg-gray-300 dark:bg-[#303030] rounded w-1/3 mb-2"></div>
+                  <div class="h-3 bg-gray-300 dark:bg-[#303030] rounded w-full mb-1"></div>
+                  <div class="h-3 bg-gray-300 dark:bg-[#303030] rounded w-2/3"></div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="flex text-sm text-black dark:text-white font-medium">
+                  <span>{{ formatCount(videoViewCount) }} 次觀看</span>
+                  <span class="mx-2">•</span>
+                  <span>{{ videoPublishedText }}</span>
+                </div>
+                <p class="mt-2 text-sm text-black dark:text-white whitespace-pre-wrap line-clamp-3">
+                  {{ videoDescription }}
+                </p>
+              </template>
             </div>
           </div>
         </div>
 
         <!-- Related Videos -->
         <div class="lg:w-[400px] xl:w-[420px] lg:pl-6 mt-6 lg:mt-0">
-          <div v-for="video in relatedVideos" :key="video.videoId" class="mb-2">
-            <router-link :to="`/yt/watch/${video.videoId}`" class="flex">
-              <div class="relative w-40 min-w-[160px] aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-[#272727]">
-                <img
-                  :src="getVideoThumbnail(video)"
-                  :alt="video.title"
-                  class="w-full h-full object-cover"
-                />
-                <div v-if="video.lengthSeconds" class="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">
-                  {{ formatDuration(video.lengthSeconds) }}
-                </div>
-                <div v-if="video.liveNow" class="absolute bottom-1 right-1 bg-red-600 text-white text-xs px-1 rounded">
-                  直播中
-                </div>
+          <!-- Skeleton Loading -->
+          <template v-if="isLoading">
+            <div v-for="i in 8" :key="'skeleton-' + i" class="mb-3 flex animate-pulse">
+              <div class="w-40 min-w-[160px] aspect-video rounded-lg bg-gray-200 dark:bg-[#272727]"></div>
+              <div class="ml-2 flex flex-col flex-1">
+                <div class="h-4 bg-gray-200 dark:bg-[#272727] rounded w-full mb-2"></div>
+                <div class="h-3 bg-gray-200 dark:bg-[#272727] rounded w-3/4 mb-2"></div>
+                <div class="h-3 bg-gray-200 dark:bg-[#272727] rounded w-1/2"></div>
               </div>
-              <div class="ml-2 flex flex-col overflow-hidden">
-                <span class="text-sm font-medium text-black dark:text-white line-clamp-2">{{ video.title }}</span>
-                <span class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ video.author }}</span>
-                <div class="text-xs text-gray-600 dark:text-gray-400">
-                  <span v-if="video.viewCount">{{ formatCount(video.viewCount) }} 次觀看</span>
-                  <span v-if="video.viewCount && video.published" class="mx-1">•</span>
-                  <span v-if="video.publishedText">{{ formatPublishedText(video.publishedText) }}</span>
+            </div>
+          </template>
+
+          <!-- Actual Videos -->
+          <template v-else>
+            <div v-for="video in relatedVideos" :key="video.videoId" class="mb-2">
+              <router-link :to="`/yt/watch/${video.videoId}`" class="flex">
+                <div class="relative w-40 min-w-[160px] aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-[#272727]">
+                  <img
+                    :src="getVideoThumbnail(video)"
+                    :alt="video.title"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div v-if="video.lengthSeconds" class="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">
+                    {{ formatDuration(video.lengthSeconds) }}
+                  </div>
+                  <div v-if="video.liveNow" class="absolute bottom-1 right-1 bg-red-600 text-white text-xs px-1 rounded">
+                    直播中
+                  </div>
                 </div>
-              </div>
-            </router-link>
-          </div>
-          <div v-if="relatedVideos.length === 0 && !isLoading" class="text-center text-gray-500 py-4">
-            沒有推薦影片
-          </div>
+                <div class="ml-2 flex flex-col overflow-hidden">
+                  <span class="text-sm font-medium text-black dark:text-white line-clamp-2">{{ video.title }}</span>
+                  <span class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ video.author }}</span>
+                  <div class="text-xs text-gray-600 dark:text-gray-400">
+                    <span v-if="video.viewCount">{{ formatCount(video.viewCount) }} 次觀看</span>
+                    <span v-if="video.viewCount && video.publishedText" class="mx-1">•</span>
+                    <span v-if="video.publishedText">{{ formatPublishedText(video.publishedText) }}</span>
+                  </div>
+                </div>
+              </router-link>
+            </div>
+            <div v-if="relatedVideos.length === 0" class="text-center text-gray-500 py-4">
+              沒有推薦影片
+            </div>
+          </template>
         </div>
       </div>
     </div>

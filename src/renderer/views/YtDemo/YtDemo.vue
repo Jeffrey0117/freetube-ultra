@@ -3,16 +3,29 @@
     <div class="p-4">
       <!-- Video Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <YtVideoCard
-          v-for="video in videos"
-          :key="video.videoId"
-          :video="video"
-        />
-      </div>
+        <!-- Skeleton Loading -->
+        <template v-if="isLoading">
+          <div v-for="i in 12" :key="'skeleton-' + i" class="animate-pulse">
+            <div class="aspect-video rounded-xl bg-gray-200 dark:bg-[#272727]"></div>
+            <div class="flex mt-3">
+              <div class="h-9 w-9 rounded-full bg-gray-200 dark:bg-[#272727] flex-shrink-0"></div>
+              <div class="ml-3 flex-1">
+                <div class="h-4 bg-gray-200 dark:bg-[#272727] rounded w-full mb-2"></div>
+                <div class="h-3 bg-gray-200 dark:bg-[#272727] rounded w-3/4 mb-2"></div>
+                <div class="h-3 bg-gray-200 dark:bg-[#272727] rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+        </template>
 
-      <!-- Loading -->
-      <div v-if="isLoading" class="flex justify-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+        <!-- Actual Videos -->
+        <template v-else>
+          <YtVideoCard
+            v-for="video in videos"
+            :key="video.videoId"
+            :video="video"
+          />
+        </template>
       </div>
 
       <!-- Empty State -->
