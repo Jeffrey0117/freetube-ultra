@@ -148,14 +148,6 @@ const actions = {
     return null
   },
 
-  setQueue({ commit }, { tracks, startIndex = 0 }) {
-    commit('SET_QUEUE', tracks)
-    commit('SET_QUEUE_INDEX', startIndex)
-    if (tracks.length > 0) {
-      commit('SET_CURRENT_TRACK', tracks[startIndex])
-    }
-  },
-
   addToQueue({ commit }, track) {
     commit('ADD_TO_QUEUE', track)
   },
@@ -237,6 +229,33 @@ const actions = {
 
   setVolume({ commit }, volume) {
     commit('SET_VOLUME', volume)
+  },
+
+  togglePlayPause({ commit, state }) {
+    commit('SET_PLAYING', !state.isPlaying)
+  },
+
+  toggleRepeat({ commit, state }) {
+    const modes = ['none', 'all', 'one']
+    const currentIndex = modes.indexOf(state.repeatMode)
+    const nextMode = modes[(currentIndex + 1) % modes.length]
+    commit('SET_REPEAT_MODE', nextMode)
+  },
+
+  setQueue({ commit }, tracks) {
+    // 支援直接傳入 array 或 { tracks, startIndex }
+    if (Array.isArray(tracks)) {
+      commit('SET_QUEUE', tracks)
+      if (tracks.length > 0) {
+        commit('SET_QUEUE_INDEX', 0)
+      }
+    } else {
+      commit('SET_QUEUE', tracks.tracks)
+      commit('SET_QUEUE_INDEX', tracks.startIndex || 0)
+      if (tracks.tracks.length > 0) {
+        commit('SET_CURRENT_TRACK', tracks.tracks[tracks.startIndex || 0])
+      }
+    }
   }
 }
 
@@ -361,6 +380,7 @@ const mutations = {
 }
 
 export default {
+  namespaced: true,
   state,
   getters,
   actions,

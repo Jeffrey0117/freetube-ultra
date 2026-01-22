@@ -22,6 +22,7 @@ import {
   sortCaptions,
   translateSponsorBlockCategory
 } from '../../helpers/player/utils'
+import { applyAudioGain } from '../../helpers/audio-gain'
 import {
   addKeyboardShortcutToActionTitle,
   showToast,
@@ -2640,6 +2641,11 @@ export default defineComponent({
         // otherwise 'false' will be returned as true as well
         videoElement.muted = (muted === 'true')
       }
+
+      // 套用音量增益，讓我們比別人大聲
+      const volumeGain = store.getters.getVolumeGain || 1.5
+      applyAudioGain(videoElement, volumeGain)
+      console.log('[ShakaPlayer] Applied audio gain:', volumeGain)
 
       // 強制自動播放時，必須設為 muted 才能繞過瀏覽器限制
       if (forceAutoplay.value) {

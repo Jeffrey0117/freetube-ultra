@@ -321,6 +321,7 @@ const state = {
   currentLocale: 'system',
   defaultInvidiousInstance: getDefaultApiUrl(),
   defaultVolume: 1,
+  volumeGain: 1.5, // 音量增益倍數，1.5 = 150%，讓我們比別人大聲
   uiScale: 100,
   userPlaylistsSortBy: 'latest_played_first',
   userHistorySortBy: 'latest_played_first',

@@ -3,6 +3,17 @@ import i18n from './i18n/index'
 import router from './router/index'
 import store from './store/index'
 import App from './App.vue'
+
+// 忽略 ResizeObserver 錯誤（這是無害的瀏覽器警告）
+if (typeof window !== 'undefined') {
+  const originalError = window.onerror
+  window.onerror = (message, ...args) => {
+    if (typeof message === 'string' && message.includes('ResizeObserver loop')) {
+      return true
+    }
+    return originalError?.(message, ...args)
+  }
+}
 import { showExternalPlayerUnsupportedActionToast, showToast } from './helpers/utils'
 import { library } from './fontawesome-minimal'
 // import the styles

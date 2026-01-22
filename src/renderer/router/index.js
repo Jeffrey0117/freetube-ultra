@@ -23,6 +23,11 @@ import YtWatch from '../views/YtWatch/YtWatch.vue'
 import YtSearch from '../views/YtSearch/YtSearch.vue'
 import YtMusicHome from '../views/YtMusic/YtMusicHome.vue'
 import YtMusicPlayer from '../views/YtMusic/YtMusicPlayer.vue'
+import YtFavorites from '../views/YtFavorites/YtFavorites.vue'
+import YtCourses from '../views/YtCourses/YtCourses.vue'
+import YtCourseDetail from '../views/YtCourses/YtCourseDetail.vue'
+import YtChannel from '../views/YtChannel/YtChannel.vue'
+import YtSubscriptions from '../views/YtSubscriptions/YtSubscriptions.vue'
 
 // 會員系統相關頁面
 import Profile from '../views/Profile/Profile.vue'
@@ -288,7 +293,7 @@ const router = createRouter({
       meta: {
         title: '頻道'
       },
-      component: YtDemo // TODO: Create dedicated channel page
+      component: YtChannel
     },
     {
       path: '/yt/trending',
@@ -304,7 +309,7 @@ const router = createRouter({
       meta: {
         title: '訂閱內容'
       },
-      component: YtDemo // TODO: Create dedicated subscriptions page
+      component: YtSubscriptions
     },
     {
       path: '/yt/history',
@@ -337,6 +342,32 @@ const router = createRouter({
         title: '設定'
       },
       component: YtDemo // TODO: Create dedicated settings page
+    },
+    // MeeTube Favorites
+    {
+      path: '/yt/favorites',
+      name: 'ytFavorites',
+      meta: {
+        title: '我的收藏'
+      },
+      component: YtFavorites
+    },
+    // MeeTube Courses
+    {
+      path: '/yt/courses',
+      name: 'ytCourses',
+      meta: {
+        title: '我的課程'
+      },
+      component: YtCourses
+    },
+    {
+      path: '/yt/courses/:id',
+      name: 'ytCourseDetail',
+      meta: {
+        title: '課程詳情'
+      },
+      component: YtCourseDetail
     },
     // MeeTube Music Mode
     {

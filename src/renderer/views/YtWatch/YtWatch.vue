@@ -89,8 +89,14 @@
                     </div>
                   </router-link>
                 </template>
-                <button class="ml-6 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-full text-sm font-medium hover:opacity-80">
-                  訂閱
+                <button
+                  class="ml-6 px-4 py-2 rounded-full text-sm font-medium hover:opacity-80"
+                  :class="isChannelSubscribed
+                    ? 'bg-gray-200 dark:bg-[#272727] text-black dark:text-white'
+                    : 'bg-black dark:bg-white text-white dark:text-black'"
+                  @click="toggleSubscription"
+                >
+                  {{ isChannelSubscribed ? '已訂閱' : '訂閱' }}
                 </button>
               </div>
 
@@ -113,6 +119,19 @@
                 <button class="flex items-center px-4 py-2 bg-gray-100 dark:bg-[#272727] rounded-full hover:bg-gray-200 dark:hover:bg-[#3a3a3a]">
                   <font-awesome-icon :icon="['fas', 'download']" class="text-black dark:text-white" />
                   <span class="ml-2 text-black dark:text-white text-sm">下載</span>
+                </button>
+                <button
+                  class="flex items-center px-4 py-2 rounded-full"
+                  :class="isFavorited ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-[#272727] hover:bg-gray-200 dark:hover:bg-[#3a3a3a]'"
+                  @click="toggleFavorite"
+                >
+                  <font-awesome-icon
+                    :icon="['fas', 'heart']"
+                    :class="isFavorited ? 'text-red-500' : 'text-black dark:text-white'"
+                  />
+                  <span class="ml-2 text-sm" :class="isFavorited ? 'text-red-500' : 'text-black dark:text-white'">
+                    {{ isFavorited ? '已收藏' : '收藏' }}
+                  </span>
                 </button>
                 <button
                   class="flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700"
@@ -251,6 +270,12 @@ export default {
   computed: {
     currentInvidiousInstanceUrl() {
       return this.$store.getters.getCurrentInvidiousInstanceUrl
+    },
+    isFavorited() {
+      return this.$store.getters['favorites/isFavorite'](this.videoId)
+    },
+    isChannelSubscribed() {
+      return this.$store.getters['subscriptions/isSubscribed'](this.channelId)
     }
   },
   watch: {
@@ -438,6 +463,26 @@ export default {
     playAsMusic() {
       // Navigate to music player with current video
       this.$router.push(`/yt/music/play/${this.videoId}`)
+    },
+
+    toggleFavorite() {
+      const video = {
+        videoId: this.videoId,
+        title: this.videoTitle,
+        author: this.channelName,
+        thumbnail: this.thumbnail,
+        duration: this.videoDuration
+      }
+      this.$store.dispatch('favorites/toggleFavorite', video)
+    },
+
+    toggleSubscription() {
+      const channel = {
+        channelId: this.channelId,
+        name: this.channelName,
+        thumbnail: this.channelThumbnail
+      }
+      this.$store.dispatch('subscriptions/toggleSubscription', channel)
     }
   }
 }

@@ -1,9 +1,15 @@
 import { base64EncodeUtf8, createWebURL, fetchWithTimeout, randomArrayItem } from '../../helpers/utils'
 
 // 運行時檢測 API URL (支援 Cloudflare Tunnel 遠程訪問)
+// 網頁版使用相對路徑，透過 webpack proxy 代理到本地 API Server
 function getInitialApiUrl() {
-  if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost') {
-    return `${window.location.protocol}//${window.location.hostname}`
+  if (typeof window !== 'undefined' && window.location) {
+    // 非 localhost 時使用當前 hostname (例如 Cloudflare Tunnel)
+    if (window.location.hostname !== 'localhost') {
+      return `${window.location.protocol}//${window.location.hostname}`
+    }
+    // localhost 時使用空字串，讓請求變成相對路徑，透過 webpack proxy
+    return ''
   }
   return 'http://localhost:3001'
 }

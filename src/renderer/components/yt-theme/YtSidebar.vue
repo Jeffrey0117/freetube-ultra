@@ -69,6 +69,26 @@
         <span class="ml-6 text-sm text-black dark:text-white">播放清單</span>
       </router-link>
 
+      <!-- 我的收藏 -->
+      <router-link
+        to="/yt/favorites"
+        class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#272727]"
+        :class="{ 'bg-gray-200 dark:bg-[#272727]': isActive('/yt/favorites') }"
+      >
+        <font-awesome-icon :icon="['fas', 'heart']" class="w-6 text-red-500" />
+        <span class="ml-6 text-sm text-black dark:text-white">我的收藏</span>
+      </router-link>
+
+      <!-- 課程 -->
+      <router-link
+        to="/yt/courses"
+        class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#272727]"
+        :class="{ 'bg-gray-200 dark:bg-[#272727]': isActive('/yt/courses') }"
+      >
+        <font-awesome-icon :icon="['fas', 'graduation-cap']" class="w-6 text-black dark:text-white" />
+        <span class="ml-6 text-sm text-black dark:text-white">課程</span>
+      </router-link>
+
       <hr class="my-3 border-gray-200 dark:border-[#303030]" />
 
       <!-- 設定 -->

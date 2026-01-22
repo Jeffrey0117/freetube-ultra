@@ -27,8 +27,18 @@
 
     <!-- Track Info -->
     <div class="px-6 text-center">
-      <h1 class="text-white text-xl font-bold line-clamp-2">{{ currentTrack?.title || '未選擇歌曲' }}</h1>
-      <p class="text-gray-400 mt-1">{{ currentTrack?.author || '' }}</p>
+      <template v-if="isLoadingAudio">
+        <h1 class="text-white text-xl font-bold">載入中...</h1>
+        <p class="text-gray-400 mt-1">正在取得音訊串流</p>
+      </template>
+      <template v-else-if="loadError">
+        <h1 class="text-red-400 text-xl font-bold">載入失敗</h1>
+        <p class="text-gray-400 mt-1">{{ loadError }}</p>
+      </template>
+      <template v-else>
+        <h1 class="text-white text-xl font-bold line-clamp-2">{{ currentTrack?.title || '未選擇歌曲' }}</h1>
+        <p class="text-gray-400 mt-1">{{ currentTrack?.author || '' }}</p>
+      </template>
     </div>
 
     <!-- Progress Bar -->
@@ -119,8 +129,9 @@
 </template>
 
 <script>
-import { mapState, mapActions, mapMutations } from 'vuex'
+import { mapState, mapActions, mapMutations, mapGetters } from 'vuex'
 import { getAudioStreamUrl } from '../../helpers/api/music'
+import { applyAudioGain } from '../../helpers/audio-gain'
 
 export default {
   name: 'YtMusicPlayer',
@@ -130,11 +141,14 @@ export default {
       audioUrl: '',
       currentTime: 0,
       duration: 0,
-      isLoadingAudio: false
+      isLoadingAudio: false,
+      loadError: '',
+      gainApplied: false
     }
   },
   computed: {
     ...mapState('musicMode', ['currentTrack', 'isPlaying', 'queue', 'queueIndex', 'shuffleEnabled', 'repeatMode']),
+    ...mapGetters(['getVolumeGain']),
 
     repeatModeClass() {
       return {
@@ -191,8 +205,18 @@ export default {
       }
 
       this.isLoadingAudio = true
+      this.loadError = ''
       try {
-        const { audioUrl, videoInfo } = await getAudioStreamUrl(this.videoId)
+        const result = await getAudioStreamUrl(this.videoId)
+
+        if (!result) {
+          this.loadError = '無法載入音訊串流'
+          console.error('Failed to get audio stream - result is null')
+          this.isLoadingAudio = false
+          return
+        }
+
+        const { audioUrl, videoInfo } = result
         this.audioUrl = audioUrl
 
         const track = {
@@ -207,6 +231,7 @@ export default {
         this.playTrack(track)
       } catch (e) {
         console.error('Failed to load track:', e)
+        this.loadError = '載入失敗: ' + (e.message || '未知錯誤')
       }
       this.isLoadingAudio = false
     },
@@ -258,6 +283,14 @@ export default {
       if (this.$refs.audioPlayer) {
         this.duration = this.$refs.audioPlayer.duration
         this.SET_DURATION(this.duration)
+
+        // 套用音量增益，讓我們比別人大聲
+        if (!this.gainApplied) {
+          const gain = this.getVolumeGain || 1.5
+          applyAudioGain(this.$refs.audioPlayer, gain)
+          this.gainApplied = true
+          console.log('[YtMusicPlayer] Applied audio gain:', gain)
+        }
       }
     },
 

@@ -11,6 +11,9 @@ import subscriptionCache from './modules/subscription-cache'
 import utils from './modules/utils'
 import player from './modules/player'
 import musicMode from './modules/musicMode'
+import favorites from './modules/favorites'
+import courses from './modules/courses'
+import subscriptions from './modules/subscriptions'
 import onboarding from './modules/onboarding'
 import user from './modules/user'
 import youtubeAuth from './modules/youtube-auth'
@@ -24,9 +27,12 @@ export default createStore({
     settings,
     searchHistory,
     subscriptionCache,
+    subscriptions,
     utils,
     player,
     musicMode,
+    favorites,
+    courses,
     onboarding,
     user,
     youtubeAuth,

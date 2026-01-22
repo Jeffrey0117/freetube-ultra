@@ -445,6 +445,35 @@ function createAuthorThumbnails(avatarUrl) {
   ]
 }
 
+// 解析發布時間文字為毫秒數
+function parsePublishedTime(text) {
+  if (!text) return 0
+  const match = text.match(/(\d+)\s*(秒|分鐘|小時|天|週|個月|年|second|minute|hour|day|week|month|year)/i)
+  if (!match) return 0
+
+  const num = parseInt(match[1])
+  const unit = match[2].toLowerCase()
+
+  const multipliers = {
+    '秒': 1000,
+    'second': 1000,
+    '分鐘': 60 * 1000,
+    'minute': 60 * 1000,
+    '小時': 60 * 60 * 1000,
+    'hour': 60 * 60 * 1000,
+    '天': 24 * 60 * 60 * 1000,
+    'day': 24 * 60 * 60 * 1000,
+    '週': 7 * 24 * 60 * 60 * 1000,
+    'week': 7 * 24 * 60 * 60 * 1000,
+    '個月': 30 * 24 * 60 * 60 * 1000,
+    'month': 30 * 24 * 60 * 60 * 1000,
+    '年': 365 * 24 * 60 * 60 * 1000,
+    'year': 365 * 24 * 60 * 60 * 1000
+  }
+
+  return num * (multipliers[unit] || 0)
+}
+
 // 轉換搜尋結果為 Invidious 格式
 function convertSearchResults(results) {
   return results.map(item => {
@@ -694,7 +723,7 @@ function convertChannelVideos(videos, channelId) {
       description: '',
       viewCount: viewCount,
       viewCountText: viewText,
-      published: 0,
+      published: video.published?.text ? Date.now() - parsePublishedTime(video.published.text) : Date.now(),
       publishedText: video.published?.text || '',
       lengthSeconds: video.duration?.seconds || 0,
       liveNow: video.is_live || false,
