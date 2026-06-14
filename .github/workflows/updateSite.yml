@@ -33,14 +33,14 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create Current Version Variable
-      uses: bluwy/substitute-string-action@v3
+      uses: bluwy/substitute-string-action@v4
       id: current
       with:
         _input-text: ${{ fromJson(steps.list_results.outputs.result)[0].tag_name }}
         -beta: ''
         v: ''
     - name: Create Previous Version Variable
-      uses: bluwy/substitute-string-action@v3
+      uses: bluwy/substitute-string-action@v4
       id: previous
       with:
         _input-text: ${{ fromJson(steps.list_results.outputs.result)[1].tag_name }}
